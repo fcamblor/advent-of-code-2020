@@ -1,7 +1,7 @@
 import {extractColumnBasedValues} from "./utils";
 
-function FIND_2020_WITH_2(cells) {
-    const [ values ] = extractColumnBasedValues(cells);
+function FIND_2020_WITH_2(cells: GSheetCells) {
+    const [ values ] = extractColumnBasedValues<number>(cells);
     for(var i=0; i<values.length; i++){
         for(var j=i+1; j<values.length; j++){
             if(values[i] + values[j] === 2020) {
@@ -13,8 +13,8 @@ function FIND_2020_WITH_2(cells) {
     return ["not found"];
 }
 
-function FIND_2020_WITH_3(cells) {
-    const [ values ] = extractColumnBasedValues(cells);
+function FIND_2020_WITH_3(cells: GSheetCells) {
+    const [ values ] = extractColumnBasedValues<number>(cells);
     for(var i=0; i<values.length; i++){
         for(var j=i+1; j<values.length; j++){
             for(var k=j+1; k<values.length; k++){
