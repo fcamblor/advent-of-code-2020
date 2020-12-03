@@ -45,7 +45,7 @@ class TreeMap {
     }
 }
 
-function CREATE_EXTENDED_MAP(cells: GSheetCells, stepsRight: number, stepsDown: number, format: "result"|"map") {
+function CALCULATE_ENCOUNTERED_TREES(cells: GSheetCells, stepsRight: number, stepsDown: number, format: "result"|"map") {
     const [ treeMapRows ] = extractColumnBasedValues<string>(cells);
     const treeMap = inputToMap(treeMapRows);
     const requiredWidth = Math.floor(treeMap.width * treeMap.height / stepsDown);
