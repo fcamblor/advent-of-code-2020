@@ -25,14 +25,18 @@ class TreeMap {
         while(position.y + stepsDown < this.height) {
             position = { x: position.x + stepsRight, y: position.y + stepsDown };
             if(this.cells[position.y][position.x] === TREE) {
-                this.cells[position.y][position.x] = FOUND_TREE;
+                this.updateCell(position.x, position.y, FOUND_TREE);
                 treesCount++;
             } else {
-                this.cells[position.y][position.x] = MISSED_TREE;
+                this.updateCell(position.x, position.y, MISSED_TREE);
             }
         }
 
         return treesCount;
+    }
+
+    public updateCell(x: number, y: number, value: TreeMapCell) {
+        this.cells[y][x] = value;
     }
 
     public static concatHorizontally(tm1: TreeMap, tm2: TreeMap): TreeMap {
@@ -41,7 +45,7 @@ class TreeMap {
     }
 }
 
-function CREATE_EXTENDED_MAP(cells: GSheetCells, stepsRight: number, stepsDown: number) {
+function CREATE_EXTENDED_MAP(cells: GSheetCells, stepsRight: number, stepsDown: number, format: "result"|"map") {
     const [ treeMapRows ] = extractColumnBasedValues<string>(cells);
     const treeMap = inputToMap(treeMapRows);
     const requiredWidth = Math.floor(treeMap.width * treeMap.height / stepsDown);
@@ -52,8 +56,13 @@ function CREATE_EXTENDED_MAP(cells: GSheetCells, stepsRight: number, stepsDown: 
     }
 
     const foundTrees = extendedTreeMap.findAndFillTrees(stepsRight, stepsDown);
-    // return extendedTreeMap.toGSheetCells();
-    return foundTrees;
+    if(format === "result") {
+        return foundTrees;
+    } else if(format === "map") {
+        return extendedTreeMap.toGSheetCells();
+    } else {
+        throw new Error("Unsupported format : "+format);
+    }
 }
 
 function inputToMap(input: string[]): TreeMap {
