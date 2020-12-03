@@ -3,7 +3,8 @@ import {combine, extractColumnBasedValues} from "./utils";
 const TREE = "#";
 const OPEN_AREA = ".";
 const FOUND_TREE = "O";
-type TreeMapCell = (typeof TREE)|(typeof OPEN_AREA)|(typeof FOUND_TREE);
+const MISSED_TREE = "X";
+type TreeMapCell = (typeof TREE)|(typeof OPEN_AREA)|(typeof FOUND_TREE)|(typeof MISSED_TREE);
 
 class TreeMap {
     public readonly width: number;
@@ -26,6 +27,8 @@ class TreeMap {
             if(this.cells[position.y][position.x] === TREE) {
                 this.cells[position.y][position.x] = FOUND_TREE;
                 treesCount++;
+            } else {
+                this.cells[position.y][position.x] = MISSED_TREE;
             }
         }
 
