@@ -48,3 +48,20 @@ export function combine(...arrays: any[]): any[][] {
 
     return arrays[0].map((_: any, idx: number) => arrays.map(arr => arr[idx]));
 }
+
+export function rotateMatrix<T>(m: T[][]): T[][] {
+    if(!m.length){ return []; }
+    const rotated = Array(m[0].length);
+    for(var i=0; i<rotated.length; i++){
+        rotated[i] = Array(m.length);
+        for(var j=0; j<m.length; j++){
+            rotated[i][j] = m[j][i];
+        }
+    }
+    return rotated;
+}
+
+function JS_SPLIT(cells: GSheetCells, regexParam1: string, regexParam2?: string) {
+    const [ values ] = extractColumnBasedValues<string>(cells);
+    return values.map(v => v.split(new RegExp(regexParam1, regexParam2)));
+}
