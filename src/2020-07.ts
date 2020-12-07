@@ -7,7 +7,7 @@ type BagDependency = {
 
 class BagConstraint {
     private static MAX_NUMBER_OF_DEPENDENCIES = 4;
-    public static SHINY_GOLD = new BagConstraint("shiny gold", []);
+    public static SHINY_GOLD_NAME = "shiny gold";
 
     constructor(public readonly bagName: string, public readonly dependencies: BagDependency[]) {
     }
@@ -29,7 +29,8 @@ class BagConstraint {
 
 type ResolvableBagConstraintsEntry = {
     bagConstraint: BagConstraint;
-} & ({ resolved: false, containsShinyBag: undefined, isShinyBag: undefined } | { resolved: true, containsShinyBag: boolean, isShinyBag: boolean });
+} & ({ resolved: false, containsShinyBag: undefined, containedBags: undefined }
+   | { resolved: true,  containsShinyBag: boolean,  containedBags: number });
 type ResolvableBagConstraintsRecord = {
     [bagName: string]: ResolvableBagConstraintsEntry
 };
@@ -44,9 +45,6 @@ class ResolvableBagConstraints {
         return this.remainingResolutions !== 0;
     }
 
-    // public shinyBagsCountFor(bagName: string): number|undefined {
-    //     return this.attrs[bagName].shinyBagsCount;
-    // }
     public containsShinyBag(bagName: string): boolean|undefined {
         return !!this.attrs[bagName].containsShinyBag;
     }
@@ -61,7 +59,7 @@ class ResolvableBagConstraints {
             if(this.attrs[dependency.bagName].containsShinyBag === undefined) {
                 return undefined;
             }
-            return containsShinyBag || !!this.attrs[dependency.bagName].containsShinyBag || !!this.attrs[dependency.bagName].isShinyBag;
+            return containsShinyBag || !!this.attrs[dependency.bagName].containsShinyBag || (dependency.bagName === BagConstraint.SHINY_GOLD_NAME);
         }, false as boolean|undefined);
 
         this.attrs[resolvableConstraint.bagConstraint.bagName].resolved = true;
@@ -91,11 +89,9 @@ class ResolvableBagConstraints {
 
     public static createFrom(bagConstraints: BagConstraint[]) {
         const attrs = bagConstraints.reduce((resolvableBagConstraints, bagConstraint) => {
-            resolvableBagConstraints[bagConstraint.bagName] = { resolved: false, bagConstraint, containsShinyBag: undefined, isShinyBag: undefined };
+            resolvableBagConstraints[bagConstraint.bagName] = { resolved: false, bagConstraint, containsShinyBag: undefined };
             return resolvableBagConstraints;
         }, {} as ResolvableBagConstraintsRecord);
-
-        attrs[BagConstraint.SHINY_GOLD.bagName] = { resolved: true, containsShinyBag: false, isShinyBag: true, bagConstraint: BagConstraint.SHINY_GOLD };
 
         return new ResolvableBagConstraints(attrs);
     }
