@@ -49,6 +49,10 @@ class ResolvableBagConstraints {
         return !!this.attrs[bagName].containsShinyBag;
     }
 
+    public containedBags(bagName: string): number|undefined {
+        return this.attrs[bagName].containedBags;
+    }
+
     public toStringifiedJSON(bagName: string) {
         return JSON.stringify(this.attrs[bagName]);
     }
@@ -61,9 +65,13 @@ class ResolvableBagConstraints {
             }
             return containsShinyBag || !!this.attrs[dependency.bagName].containsShinyBag || (dependency.bagName === BagConstraint.SHINY_GOLD_NAME);
         }, false as boolean|undefined);
+        const containedBags: number = resolvableConstraint.bagConstraint.dependencies.reduce((containedBags, dependency) => {
+            return containedBags + dependency.quantity * this.attrs[dependency.bagName].containedBags!;
+        }, resolvableConstraint.bagConstraint.bagName === BagConstraint.SHINY_GOLD_NAME?0:1);
 
         this.attrs[resolvableConstraint.bagConstraint.bagName].resolved = true;
         this.attrs[resolvableConstraint.bagConstraint.bagName].containsShinyBag = containsShinyBag;
+        this.attrs[resolvableConstraint.bagConstraint.bagName].containedBags = containedBags;
 
         this.remainingResolutions--;
 
@@ -89,7 +97,7 @@ class ResolvableBagConstraints {
 
     public static createFrom(bagConstraints: BagConstraint[]) {
         const attrs = bagConstraints.reduce((resolvableBagConstraints, bagConstraint) => {
-            resolvableBagConstraints[bagConstraint.bagName] = { resolved: false, bagConstraint, containsShinyBag: undefined };
+            resolvableBagConstraints[bagConstraint.bagName] = { resolved: false, bagConstraint, containsShinyBag: undefined, containedBags: undefined };
             return resolvableBagConstraints;
         }, {} as ResolvableBagConstraintsRecord);
 
@@ -107,7 +115,10 @@ function COUNT_BAGS_CONTAINING_SHINY_BAG(startingBagsCells: GSheetCells, contain
         const numberOfShinyBags = resolvableBagConstraints.pickAndResolveFirstResolvableContraint();
     }
 
-    return bagConstraints.map(bagConstraint => [ resolvableBagConstraints.containsShinyBag(bagConstraint.bagName)?1:0 ]);
+    return bagConstraints.map(bagConstraint => [
+        resolvableBagConstraints.containsShinyBag(bagConstraint.bagName)?1:0,
+        resolvableBagConstraints.containedBags(bagConstraint.bagName)
+    ]);
 }
 
 export const countBagsContainingShinyBag = COUNT_BAGS_CONTAINING_SHINY_BAG;
