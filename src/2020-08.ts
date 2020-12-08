@@ -65,13 +65,6 @@ export class InstructionExecutor {
         return { state, status: programStatus };
     }
 
-    static createFrom(rawInstructions: string[][]) {
-        const instructions: Instruction[] = rawInstructions.map(([command, paramStr]) => {
-            return { command: command as Command, param: Number(paramStr) };
-        })
-        return new InstructionExecutor(instructions);
-    }
-
     private changeInstructionAt(lineNumber: number): boolean {
         this.instructions = [ ...this.initialInstructions ];
         const instr = this.instructions[lineNumber];
@@ -96,6 +89,13 @@ export class InstructionExecutor {
         }
 
         throw new Error("We were unable to fix the program !");
+    }
+
+    static createFrom(rawInstructions: string[][]) {
+        const instructions: Instruction[] = rawInstructions.map(([command, paramStr]) => {
+            return { command: command as Command, param: Number(paramStr) };
+        })
+        return new InstructionExecutor(instructions);
     }
 }
 
