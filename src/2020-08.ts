@@ -51,7 +51,13 @@ export class InstructionExecutor {
             const instr = this.instructions[state.currentLine];
             state = COMMAND_DEFINITIONS[instr.command].call(null, state, { param: instr.param });
 
-            programStatus = (executedLines.indexOf(state.currentLine) !== -1)?"INFINITE_LOOP_DETECTED":(state.currentLine===this.instructions.length)?"ENDED":"ONGOING";
+            if(executedLines.indexOf(state.currentLine) !== -1) {
+                programStatus = "INFINITE_LOOP_DETECTED";
+            } else if(state.currentLine === this.instructions.length) {
+                programStatus = "ENDED";
+            } else {
+                programStatus = "ONGOING";
+            }
         }
 
         return { state, status: programStatus };
