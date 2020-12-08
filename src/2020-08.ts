@@ -1,7 +1,7 @@
 import {extractColumnBasedValues} from "./utils";
 
 type Command = "acc"|"jmp"|"nop";
-type Status = "ONGOING"|"INFINITE_LOOP_DETECTED";
+type Status = "ONGOING"|"INFINITE_LOOP_DETECTED"|"ENDED";
 type State = { accumulator: number; currentLine: number; };
 
 type CommandDefinition = {
@@ -29,11 +29,18 @@ type Instruction = {
     command: Command;
 }
 
+type ExecutionStatus = {
+    status: Status;
+    state: State;
+};
+
 export class InstructionExecutor {
-    constructor(private instructions: Instruction[]) {
+    private instructions: Instruction[];
+    constructor(private readonly initialInstructions: Instruction[]) {
+        this.instructions = [ ...initialInstructions ];
     }
 
-    public execute(): { status: Status, state: State } {
+    public execute(): ExecutionStatus {
         let state: State = { accumulator: 0, currentLine: 0 };
         let programStatus: Status = "ONGOING";
 
@@ -44,7 +51,7 @@ export class InstructionExecutor {
             const instr = this.instructions[state.currentLine];
             state = COMMAND_DEFINITIONS[instr.command].call(null, state, { param: instr.param });
 
-            programStatus = (executedLines.indexOf(state.currentLine) !== -1)?"INFINITE_LOOP_DETECTED":"ONGOING";
+            programStatus = (executedLines.indexOf(state.currentLine) !== -1)?"INFINITE_LOOP_DETECTED":(state.currentLine===this.instructions.length)?"ENDED":"ONGOING";
         }
 
         return { state, status: programStatus };
@@ -56,6 +63,33 @@ export class InstructionExecutor {
         })
         return new InstructionExecutor(instructions);
     }
+
+    tryChangingInstructionAt(lineNumber: number) {
+        this.instructions = [ ...this.initialInstructions ];
+        const instr = this.instructions[lineNumber];
+        if(instr.command === "nop") {
+            this.instructions[lineNumber] = { ...this.instructions[lineNumber], command: "jmp" };
+            return true;
+        } else if(instr.command === "jmp") {
+            this.instructions[lineNumber] = { ...this.instructions[lineNumber], command: "nop" };
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    tryExecuteByFixingInstructions(): ExecutionStatus {
+        for (let i = 0; i < this.initialInstructions.length; i++) {
+            if(this.tryChangingInstructionAt(i)) {
+                let result = this.execute();
+                if(result.status === "ENDED") {
+                    return result;
+                }
+            }
+        }
+
+        throw new Error("We were unable to fix the program !");
+    }
 }
 
 
@@ -63,3 +97,6 @@ function EXECUTE_D8_PROGRAM(instructions: GSheetCells) {
     return InstructionExecutor.createFrom(instructions).execute().state.accumulator;
 }
 
+function FIX_THEN_EXECUTE_D8_PROGRAM(initialInstructions: GSheetCells) {
+    return InstructionExecutor.createFrom(initialInstructions).tryExecuteByFixingInstructions().state.accumulator;
+}
