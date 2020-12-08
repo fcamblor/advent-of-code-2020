@@ -4,11 +4,7 @@ type Command = "acc"|"jmp"|"nop";
 type Status = "ONGOING"|"INFINITE_LOOP_DETECTED"|"ENDED";
 type State = { accumulator: number; currentLine: number; };
 
-type CommandDefinition = {
-    [command in Command]: (state: State, context: { param: number; }) => State;
-}
-
-const COMMAND_DEFINITIONS: CommandDefinition = {
+const COMMAND_DEFINITIONS: Record<Command, (state: State, context: { param: number; }) => State> = {
     acc: (state, context) => ({
         ...state,
         accumulator: state.accumulator + context.param,
@@ -35,6 +31,12 @@ type ExecutionStatus = {
 };
 
 export class InstructionExecutor {
+    private static COMMAND_REPLACEMENTS: Record<Command, Command|undefined> = {
+        "nop": "jmp",
+        "jmp": "nop",
+        "acc": undefined
+    };
+
     private instructions: Instruction[];
     constructor(private readonly initialInstructions: Instruction[]) {
         this.instructions = [ ...initialInstructions ];
@@ -70,14 +72,13 @@ export class InstructionExecutor {
         return new InstructionExecutor(instructions);
     }
 
-    tryChangingInstructionAt(lineNumber: number) {
+    private changeInstructionAt(lineNumber: number): boolean {
         this.instructions = [ ...this.initialInstructions ];
         const instr = this.instructions[lineNumber];
-        if(instr.command === "nop") {
-            this.instructions[lineNumber] = { ...this.instructions[lineNumber], command: "jmp" };
-            return true;
-        } else if(instr.command === "jmp") {
-            this.instructions[lineNumber] = { ...this.instructions[lineNumber], command: "nop" };
+
+        const replacement = InstructionExecutor.COMMAND_REPLACEMENTS[instr.command];
+        if(replacement) {
+            this.instructions[lineNumber] = { ...this.instructions[lineNumber], command: replacement };
             return true;
         } else {
             return false;
@@ -86,7 +87,7 @@ export class InstructionExecutor {
 
     tryExecuteByFixingInstructions(): ExecutionStatus {
         for (let i = 0; i < this.initialInstructions.length; i++) {
-            if(this.tryChangingInstructionAt(i)) {
+            if(this.changeInstructionAt(i)) {
                 let result = this.execute();
                 if(result.status === "ENDED") {
                     return result;
