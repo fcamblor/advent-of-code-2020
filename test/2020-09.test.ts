@@ -1,7 +1,7 @@
-import {XMasCipher} from "../src/2020-09";
+import {findContiguousSetSummingTo, XMasCipher} from "../src/2020-09";
 
 
-test('should finding first invalid number works', () => {
+test('should finding first invalid number and contiguous set work', () => {
     const cipherValues = [
         35,
         20,
@@ -25,4 +25,5 @@ test('should finding first invalid number works', () => {
         576,
     ];
     expect(new XMasCipher(5, cipherValues).findFirstInvalidNumber()).toEqual(127);
+    expect(findContiguousSetSummingTo(cipherValues, 127)).toEqual([ 15,25,47,40 ]);
 })

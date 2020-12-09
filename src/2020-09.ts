@@ -69,9 +69,37 @@ export class XMasCipher {
 
 }
 
+export function findContiguousSetSummingTo(cipherValues: number[], expectedSum: number): number[]|undefined {
+    for(let contiguousSetStartingIndex = 0; contiguousSetStartingIndex<cipherValues.length; contiguousSetStartingIndex++) {
+        var sum = cipherValues[contiguousSetStartingIndex];
+        var contiguousSet = [ cipherValues[contiguousSetStartingIndex] ];
+        for(let j = contiguousSetStartingIndex+1; j<cipherValues.length && sum+cipherValues[j] <= expectedSum; j++) {
+            sum += cipherValues[j];
+            contiguousSet.push(cipherValues[j]);
+        }
+
+        if(sum === expectedSum) {
+            return contiguousSet;
+        }
+    }
+
+    return undefined;
+}
+
 function FIND_FIRST_INVALID_NUMBER_IN(cipherValuesCells: GSheetCells, preambleSize: number) {
     const [ cipherValuesStr ] = extractColumnBasedValues(cipherValuesCells);
     const cipherValues = cipherValuesStr.map(Number);
     return new XMasCipher(preambleSize, cipherValues).findFirstInvalidNumber();
 }
 
+function FIND_CONTIGUOUS_SET_SUMMING_TO(cipherValuesCells: GSheetCells, expectedSum: number) {
+    const [cipherValuesStr] = extractColumnBasedValues(cipherValuesCells);
+    const cipherValues = cipherValuesStr.map(Number);
+
+    const result = findContiguousSetSummingTo(cipherValues, expectedSum);
+    if(result) {
+        return rotateMatrix([ result ]);
+    }
+
+    return "No value found !";
+}
