@@ -63,12 +63,6 @@ export function rotateMatrix<T>(m: T[][]): T[][] {
     return rotated;
 }
 
-function JS_SPLIT(cells: GSheetCells, regexParam1: string, regexParam2?: string) {
-    const [ values ] = extractColumnBasedValues<string>(cells);
-    return values.map(v => v.split(new RegExp(regexParam1, regexParam2)));
-}
-
-
 export function fact(x: number) {
     let result = 1;
     for(var i=2;i<=x; i++) {
@@ -133,4 +127,15 @@ export function iterateOverMatrix<T, U>(matrix: T[][], callback: (coord:MatrixCo
 export function combinations(array: number[], uselessFillingValue = -1) {
     return new Array(1 << array.length).fill(uselessFillingValue).map(
         (_, i) => array.filter((e2, j) => i & 1 << j));
+}
+
+export function readCharMatrix<T extends string>(str: string): T[][] {
+    return str.split("\n").map(line => line.split('') as T[]);
+}
+
+export function readLines(str: string): string[] {
+    return str.split(/\r?\n/);
+}
+export function readLineGroups(str: string): string[] {
+    return str.split(/\r?\n\r?\n/);
 }
