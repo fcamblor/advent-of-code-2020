@@ -65,3 +65,23 @@ function JS_SPLIT(cells: GSheetCells, regexParam1: string, regexParam2?: string)
     const [ values ] = extractColumnBasedValues<string>(cells);
     return values.map(v => v.split(new RegExp(regexParam1, regexParam2)));
 }
+
+
+export function fact(x: number) {
+    let result = 1;
+    for(var i=2;i<=x; i++) {
+        result *= i;
+    }
+    return result;
+}
+
+export function cnp(n: number, p: number) {
+    return fact(n)/(fact(p)*fact(n-p));
+}
+
+
+// Thanks to https://stackoverflow.com/a/42531964/476345
+export function combinations(array: number[], uselessFillingValue = -1) {
+    return new Array(1 << array.length).fill(uselessFillingValue).map(
+        (_, i) => array.filter((e2, j) => i & 1 << j));
+}
