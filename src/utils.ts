@@ -79,6 +79,45 @@ export function cnp(n: number, p: number) {
     return fact(n)/(fact(p)*fact(n-p));
 }
 
+export function matrixEquals<T extends number|string>(m1: T[][], m2: T[][]): {areEqual: boolean, reason?: string} {
+    if(m1.length === 0 && m2.length === 0) {
+        return { areEqual: true };
+    }
+    if(m1.length !== m2.length) {
+        return { areEqual: false, reason: "first dimension size differ" };
+    }
+    if(m1[0].length !== m2[0].length) {
+        return {areEqual: false, reason: "second dimension size differ" };
+    }
+    for(let i=0; i<m1.length; i++) {
+        for(let j=0; j<m1[i].length; j++) {
+            if(m1[i][j] !== m2[i][j]) {
+                return { areEqual: false, reason: `difference found at [${i}][${j}] (m1[${i}][${j}]=${m1[i][j]}, m2[${i}][${j}]=${m2[i][j]})` };
+            }
+        }
+    }
+    return {areEqual: true};
+}
+
+export function matrixGetOrUndefined<T>(matrix: T[][], i: number, j: number): T|undefined {
+    if(i < 0 || i >= matrix.length || j < 0 || j >= matrix[i].length) {
+        return undefined;
+    }
+    return matrix[i][j];
+}
+
+export function iterateOverMatrix<T, U>(matrix: T[][], callback: (i: number, j: number, value: T) => ({continue: false, returnedValue:U}|{ continue: true })): U|undefined {
+    for(let i=0; i<matrix.length; i++) {
+        for(let j=0; j<matrix[i].length; j++) {
+            let result = callback(i, j, matrix[i][j]);
+            if(!result.continue) {
+                return result.returnedValue;
+            }
+        }
+    }
+    return undefined;
+}
+
 
 // Thanks to https://stackoverflow.com/a/42531964/476345
 export function combinations(array: number[], uselessFillingValue = -1) {
