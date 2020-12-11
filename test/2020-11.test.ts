@@ -1,11 +1,11 @@
-import {OCCUPIED_SEAT, PlaneGrid, SeatStatus} from "../src/2020-11";
+import {PlaneGrid, SeatStatus} from "../src/2020-11";
 
 
 function toSeatStatuses(str: string): SeatStatus[][] {
     return str.split("\n").map(r => r.split("") as SeatStatus[]);
 }
 
-test("rounds are valid", () => {
+test("Q1 sample rounds are valid", () => {
     const expectedRounds = [
         {raw:`#.##.##.##
 #######.##
@@ -84,18 +84,202 @@ L.LLLLL.LL`);
     expectedRounds.forEach((expectedRoundDefinition, idx) => {
         const expectedRound = toSeatStatuses(expectedRoundDefinition.raw);
 
-        const stabilized = planeGrid.newRound();
+        const stabilized = planeGrid.newRound(PlaneGrid.countDirectlyAdjacentSeatsAround, 4);
         const newSeats = planeGrid.seats();
 
         console.log(`Round definition[${idx}] : stabilized=${expectedRoundDefinition.stabilized}`);
         expect(newSeats).toEqual(expectedRound);
         expect(stabilized).toEqual(expectedRoundDefinition.stabilized);
     });
-    expect(planeGrid.countSeatsHavingStatus([OCCUPIED_SEAT])).toEqual(37);
+    expect(planeGrid.countOccupiedSeats()).toEqual(37);
 })
 
 test("Solution to Q1", () => {
-    const startingState = `L.LLLLLLLLLL.LLLLLLLLL.LLLLLLLLL.LLL.LL.LLLLLLLLL.LLLLLL.LLLL.LL..LLLL.LLLL.LLL.LL.LLLLLLL
+    const planeGrid = new PlaneGrid(toSeatStatuses(INPUT));
+    let numberOfRounds = 1;
+    while(!planeGrid.newRound(PlaneGrid.countDirectlyAdjacentSeatsAround, 4)) {
+        numberOfRounds++;
+        console.log(`Next round => ${numberOfRounds}`);
+    }
+    console.log(numberOfRounds);
+    expect(planeGrid.countOccupiedSeats()).toEqual(2152);
+})
+
+test("wholeDirectionRowConstraintGenerator impl", () => {
+    const matrix = Array(4).fill([]).map(row => Array(4).fill(0));
+
+    let actual = PlaneGrid.wholeDirectionRowConstraintGenerator(matrix, {x:0,y:0}, Infinity);
+    expect(actual).toEqual([
+        { hint: "↖️", coords: [] },
+        { hint: "⬆️", coords: [] },
+        { hint: "↗️", coords: [] },
+        { hint: "⬅️", coords: [] },
+        { hint: "➡️", coords: [ {x:1,y:0}, {x:2,y:0}, {x:3,y:0} ] },
+        { hint: "↙️", coords: [] },
+        { hint: "⬇️", coords: [ {x:0,y:1}, {x:0,y:2}, {x:0,y:3} ] },
+        { hint: "↘️", coords: [ {x:1,y:1}, {x:2,y:2}, {x:3,y:3} ] },
+    ]);
+
+    expect(PlaneGrid.wholeDirectionRowConstraintGenerator(matrix, {x:1,y:1}, Infinity)).toEqual([
+        { hint: "↖️", coords: [ {x:0,y:0} ] },
+        { hint: "⬆️", coords: [ {x:1,y:0} ] },
+        { hint: "↗️", coords: [ {x:2,y:0} ] },
+        { hint: "⬅️", coords: [ {x:0,y:1} ] },
+        { hint: "➡️", coords: [ {x:2,y:1}, {x:3,y:1} ] },
+        { hint: "↙️", coords: [ {x:0,y:2} ] },
+        { hint: "⬇️", coords: [ {x:1,y:2}, {x:1,y:3} ] },
+        { hint: "↘️", coords: [ {x:2,y:2}, {x:3,y:3} ] },
+    ]);
+
+});
+
+test("count seats matching samples", () => {
+    const testsExpectations = [
+        {
+            rawSeats: `.......#.
+...#.....
+.#.......
+.........
+..#L....#
+....#....
+.........
+#........
+...#.....`, expected: 8, x:3, y:4
+        }, {
+            rawSeats: `.............
+.L.L.#.#.#.#.
+.............`, expected: 0, x:1, y:1
+        }, {
+            rawSeats: `.##.##.
+#.#.#.#
+##...##
+...L...
+##...##
+#.#.#.#
+.##.##.`, expected: 0, x:3, y:3
+        }
+    ];
+
+    testsExpectations.forEach(testExpectation => {
+        const seats = toSeatStatuses(testExpectation.rawSeats);
+
+        expect(PlaneGrid.countFirstSeatInSightOnEachDirection(seats, {x:testExpectation.x, y:testExpectation.y}))
+            .toEqual(testExpectation.expected);
+    });
+})
+
+test("Q2 sample rounds are valid", () => {
+    const expectedRounds = [
+        {raw:`#.##.##.##
+#######.##
+#.#.#..#..
+####.##.##
+#.##.##.##
+#.#####.##
+..#.#.....
+##########
+#.######.#
+#.#####.##`, stabilized: false},
+        {raw:`#.LL.LL.L#
+#LLLLLL.LL
+L.L.L..L..
+LLLL.LL.LL
+L.LL.LL.LL
+L.LLLLL.LL
+..L.L.....
+LLLLLLLLL#
+#.LLLLLL.L
+#.LLLLL.L#`, stabilized: false},
+        {raw:`#.L#.##.L#
+#L#####.LL
+L.#.#..#..
+##L#.##.##
+#.##.#L.##
+#.#####.#L
+..#.#.....
+LLL####LL#
+#.L#####.L
+#.L####.L#`, stabilized: false},
+        {raw:`#.L#.L#.L#
+#LLLLLL.LL
+L.L.L..#..
+##LL.LL.L#
+L.LL.LL.L#
+#.LLLLL.LL
+..L.L.....
+LLLLLLLLL#
+#.LLLLL#.L
+#.L#LL#.L#`, stabilized: false},
+        {raw:`#.L#.L#.L#
+#LLLLLL.LL
+L.L.L..#..
+##L#.#L.L#
+L.L#.#L.L#
+#.L####.LL
+..#.#.....
+LLL###LLL#
+#.LLLLL#.L
+#.L#LL#.L#`, stabilized: false},
+        {raw:`#.L#.L#.L#
+#LLLLLL.LL
+L.L.L..#..
+##L#.#L.L#
+L.L#.LL.L#
+#.LLLL#.LL
+..#.L.....
+LLL###LLL#
+#.LLLLL#.L
+#.L#LL#.L#`, stabilized: false},
+        {raw:`#.L#.L#.L#
+#LLLLLL.LL
+L.L.L..#..
+##L#.#L.L#
+L.L#.LL.L#
+#.LLLL#.LL
+..#.L.....
+LLL###LLL#
+#.LLLLL#.L
+#.L#LL#.L#`, stabilized: true}
+    ];
+
+    const seats: SeatStatus[][] = toSeatStatuses(`L.LL.LL.LL
+LLLLLLL.LL
+L.L.L..L..
+LLLL.LL.LL
+L.LL.LL.LL
+L.LLLLL.LL
+..L.L.....
+LLLLLLLLLL
+L.LLLLLL.L
+L.LLLLL.LL`);
+
+    const planeGrid = new PlaneGrid(seats);
+    expectedRounds.forEach((expectedRoundDefinition, idx) => {
+        const expectedRound = toSeatStatuses(expectedRoundDefinition.raw);
+
+        const stabilized = planeGrid.newRound(PlaneGrid.countFirstSeatInSightOnEachDirection, 5);
+        const newSeats = planeGrid.seats();
+
+        console.log(`Round definition[${idx}] : stabilized=${expectedRoundDefinition.stabilized}`);
+        expect(newSeats).toEqual(expectedRound);
+        expect(stabilized).toEqual(expectedRoundDefinition.stabilized);
+    });
+    expect(planeGrid.countOccupiedSeats()).toEqual(26);
+})
+
+test("Solution to Q2", () => {
+    const planeGrid = new PlaneGrid(toSeatStatuses(INPUT));
+    let numberOfRounds = 1;
+    while(!planeGrid.newRound(PlaneGrid.countFirstSeatInSightOnEachDirection, 5)) {
+        numberOfRounds++;
+    }
+    console.log(numberOfRounds);
+    expect(planeGrid.countOccupiedSeats()).toEqual(1937);
+})
+
+
+
+const INPUT = `L.LLLLLLLLLL.LLLLLLLLL.LLLLLLLLL.LLL.LL.LLLLLLLLL.LLLLLL.LLLL.LL..LLLL.LLLL.LLL.LL.LLLLLLL
 .LLLL.L.LLLLLLL.LLLLLLLLLLLLLLL..LLLLLL.LLLLLLLLL.LLLLLL.LLLLLLL.LLLLLLLLLL.LLLLLLLLLLLLLL
 LLLLLLLL.LLL.LLLL.LLLL.LLLLLLLLL.LLLLLLLLLLLLLLLL.LLLLLL.LLLLLLLLL.LLL.LLLL.LLLLLLLLLLLLLL
 LLLLL..LL.LL.LLLLLLLLLLLLLLLLLLLLLLLLLL.LLLLLLLLL.LLLLLLLLLLLLLL.LLLLLLL.LLLLLLLLL.LLLLLLL
@@ -188,12 +372,3 @@ LLLLL.LLLLLL..LLLLLLLL.LLLL.LLL.LLLLLLL.LLLLLLLLL.LL.LLL.LLLLLLLLLLLLL.LLLLLLLLL
 LLLLLLLLLLLLLLLLLLLLLL.LLLLLLLLL.LLLLLLLLLLLLLLLLLLLLLLL.LLLLLLL.LLLLL.LLLL.LLLLLL..LLLLLL
 LLLLL.LLLLLL.LLLLLLLLL.LLLLLLLLL.LLLLLLLLLLLLLLLL..LLLLL.LLLLLL.LLLLLLLLLLLL.LLLLLLLLLLLLL
 L.LLL.LLLLLL.LLLLLLLLL.LLLLLLLLL.L.LLLLLLLLLLLLLLLLLL.LL.LLLLLLLLLLLLLL.LL..LLLLLL.LLLLLLL`;
-
-    const planeGrid = new PlaneGrid(toSeatStatuses(startingState));
-    let numberOfRounds = 1;
-    while(!planeGrid.newRound()) {
-        numberOfRounds++;
-    }
-    console.log(numberOfRounds);
-    expect(planeGrid.countSeatsHavingStatus([OCCUPIED_SEAT])).toEqual(2152);
-})

@@ -1,3 +1,5 @@
+export type MatrixCoord = { x: number, y: number };
+
 export function extractColumnBasedValues<A1>(...arrays: [GSheetCells]): [ A1[] ];
 export function extractColumnBasedValues<A1,A2>(...arrays: [GSheetCells,GSheetCells]): [ A1[], A2[] ];
 export function extractColumnBasedValues<A1,A2,A3>(...arrays: [GSheetCells,GSheetCells,GSheetCells]): [ A1[], A2[], A3[] ];
@@ -89,27 +91,35 @@ export function matrixEquals<T extends number|string>(m1: T[][], m2: T[][]): {ar
     if(m1[0].length !== m2[0].length) {
         return {areEqual: false, reason: "second dimension size differ" };
     }
-    for(let i=0; i<m1.length; i++) {
-        for(let j=0; j<m1[i].length; j++) {
-            if(m1[i][j] !== m2[i][j]) {
-                return { areEqual: false, reason: `difference found at [${i}][${j}] (m1[${i}][${j}]=${m1[i][j]}, m2[${i}][${j}]=${m2[i][j]})` };
+    for(let y=0; y<m1.length; y++) {
+        for(let x=0; x<m1[y].length; x++) {
+            if(m1[y][x] !== m2[y][x]) {
+                return { areEqual: false, reason: `difference found at [${y}][${x}] (m1[${y}][${x}]=${m1[y][x]}, m2[${y}][${x}]=${m2[y][x]})` };
             }
         }
     }
     return {areEqual: true};
 }
 
-export function matrixGetOrUndefined<T>(matrix: T[][], i: number, j: number): T|undefined {
-    if(i < 0 || i >= matrix.length || j < 0 || j >= matrix[i].length) {
-        return undefined;
-    }
-    return matrix[i][j];
+export function inMatrixBound(matrix: any[][], coord: MatrixCoord) {
+    return coord.y >= 0 && coord.y < matrix.length && coord.x >= 0 && matrix[0] && coord.x < matrix[0].length;
 }
 
-export function iterateOverMatrix<T, U>(matrix: T[][], callback: (i: number, j: number, value: T) => ({continue: false, returnedValue:U}|{ continue: true })): U|undefined {
-    for(let i=0; i<matrix.length; i++) {
-        for(let j=0; j<matrix[i].length; j++) {
-            let result = callback(i, j, matrix[i][j]);
+export function matrixGetOrUndefined<T>(matrix: T[][], coord: MatrixCoord): T|undefined {
+    if(!inMatrixBound(matrix, coord)) {
+        return undefined;
+    }
+    return matrix[coord.y][coord.x];
+}
+
+export function matrixSet<T>(matrix: T[][], coord: MatrixCoord, value: T) {
+    matrix[coord.y][coord.x] = value;
+}
+
+export function iterateOverMatrix<T, U>(matrix: T[][], callback: (coord:MatrixCoord, value: T) => ({continue: false, returnedValue:U}|{ continue: true })): U|undefined {
+    for(let y=0; y<matrix.length; y++) {
+        for(let x=0; x<matrix[y].length; x++) {
+            let result = callback({x,y}, matrix[y][x]);
             if(!result.continue) {
                 return result.returnedValue;
             }
