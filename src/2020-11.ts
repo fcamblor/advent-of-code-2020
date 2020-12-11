@@ -17,7 +17,7 @@ export class PlaneGrid {
 
         iterateOverMatrix(this.currentGridState, (i, j, currentSeatStatus) => {
             if([EMPTY_SEAT, OCCUPIED_SEAT].includes(currentSeatStatus)) {
-                const occupiedSeatsAround = PlaneGrid.countAdjacentSeatsAround(this.currentGridState, i, j, [OCCUPIED_SEAT]);
+                const occupiedSeatsAround = PlaneGrid.countDirectlyAdjacentSeatsAround(this.currentGridState, i, j, [OCCUPIED_SEAT]);
                 if(currentSeatStatus === EMPTY_SEAT && occupiedSeatsAround === 0) {
                     changingGrid[i][j] = OCCUPIED_SEAT;
                 }
@@ -47,14 +47,33 @@ export class PlaneGrid {
         0);
     }
 
-    static countAdjacentSeatsAround(matrix: SeatStatus[][], i: number, j: number, expectedSeatStatuses: SeatStatus[]): number {
-        return [
-            [i-1, j-1], [i,j-1], [i+1,j-1],
-            [i-1, j], [i+1,j],
-            [i-1, j+1], [i,j+1], [i+1,j+1]
-        ].reduce((count, [i, j]) => {
-            const possibleSeatStatus = matrixGetOrUndefined(matrix, i, j);
-            count += ((possibleSeatStatus !== undefined) && expectedSeatStatuses.includes(possibleSeatStatus))?1:0;
+    public static countDirectlyAdjacentSeatsAround(matrix: SeatStatus[][], i: number, j: number, expectedSeatStatuses: SeatStatus[]): number {
+        return PlaneGrid.countFirstSeatMatchingThoseRowConstraints(matrix, [
+            [ [i-1, j-1] ],
+            [ [i,j-1] ],
+            [ [i+1,j-1] ],
+            [ [i-1, j] ],
+            [ [i+1,j] ],
+            [ [i-1, j+1] ],
+            [ [i,j+1] ],
+            [ [i+1,j+1 ] ]
+        ], expectedSeatStatuses);
+    }
+
+    private static countFirstSeatMatchingThoseRowConstraints(matrix: SeatStatus[][], perDirectionRowConstraints: [number, number][][], expectedSeatStatuses: SeatStatus[]): number {
+        return perDirectionRowConstraints.reduce((count, directionRowConstraints) => {
+
+            let found = false;
+            for(var i=0; i<directionRowConstraints.length; i++) {
+                const [ ci, cj ] = directionRowConstraints[i];
+                const possibleSeatStatus = matrixGetOrUndefined(matrix, ci, cj);
+                if((possibleSeatStatus !== undefined) && expectedSeatStatuses.includes(possibleSeatStatus)) {
+                    found = true;
+                    break;
+                }
+            }
+
+            count += found?1:0;
             return count;
         }, 0);
     }
