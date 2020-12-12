@@ -1,10 +1,10 @@
 import {readLines} from "../src/utils";
 import {INPUT, Q1_SAMPLE} from "./2020-12.inputs";
-import {D11Ship, D11Ship2, DIRECTIONS} from "../src/2020-12";
+import {D11ShipQ1, D11ShipQ2} from "../src/2020-12";
 
 
 test('Q1 sample', () => {
-    let ship = new D11Ship();
+    let ship = new D11ShipQ1();
     readLines(Q1_SAMPLE).forEach(command => {
         ship.move(command);
     })
@@ -12,7 +12,7 @@ test('Q1 sample', () => {
 })
 
 test('Q1', () => {
-    let ship = new D11Ship();
+    let ship = new D11ShipQ1();
     readLines(INPUT).forEach(command => {
         ship.move(command);
     })
@@ -21,7 +21,7 @@ test('Q1', () => {
 
 
 test('Q2 rotates', () => {
-    let ship = new D11Ship2();
+    let ship = new D11ShipQ2();
     expect(ship.currentState().waypoint).toEqual({stepX:10, stepY: 1});
     expect(ship.currentState().coord).toEqual({x:0, y: 0});
 
@@ -64,7 +64,7 @@ test('Q2 rotates', () => {
 })
 
 test('Q2 sample', () => {
-    let ship = new D11Ship2();
+    let ship = new D11ShipQ2();
     expect(ship.currentState().waypoint).toEqual({stepX:10, stepY: 1});
     expect(ship.currentState().coord).toEqual({x:0, y: 0});
 
@@ -90,7 +90,7 @@ test('Q2 sample', () => {
 })
 
 test('Q2', () => {
-    let ship = new D11Ship2();
+    let ship = new D11ShipQ2();
     readLines(INPUT).forEach(command => {
         ship.move(command);
     })
