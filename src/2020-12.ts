@@ -51,10 +51,10 @@ export class D11ShipQ1 extends D11Ship<StateQ1> {
             coord: {x:0, y:0},
             direction: EAST
         }, {
-            N: (num, state) => ({ ...state, coord: { x: state.coord.x, y: state.coord.y+num } }),
-            S: (num, state) => ({ ...state, coord: { x: state.coord.x, y: state.coord.y-num } }),
-            W: (num, state) => ({ ...state, coord: { x: state.coord.x-num, y: state.coord.y } }),
-            E: (num, state) => ({ ...state, coord: { x: state.coord.x+num, y: state.coord.y } }),
+            N: (num, state) => ({ ...state, coord: { ...state.coord, y: state.coord.y+num } }),
+            S: (num, state) => ({ ...state, coord: { ...state.coord, y: state.coord.y-num } }),
+            W: (num, state) => ({ ...state, coord: { ...state.coord, x: state.coord.x-num } }),
+            E: (num, state) => ({ ...state, coord: { ...state.coord, x: state.coord.x+num } }),
             R: (num, state) => ({ ...state, direction: DIRECTIONS[ (DIRECTIONS.indexOf(state.direction) + (num/90) + DIRECTIONS.length)%DIRECTIONS.length ] }),
             L: (num, state) => ({ ...state, direction: DIRECTIONS[ (DIRECTIONS.indexOf(state.direction) - (num/90) + DIRECTIONS.length)%DIRECTIONS.length ] }),
             F: (num, state) => this.runners[state.direction](num, state),
@@ -76,10 +76,10 @@ export class D11ShipQ2 extends D11Ship<StateQ2>{
             coord: {x:0, y:0},
             waypoint: {stepX: 10, stepY: 1}
         }, {
-            N: (num, state) => ({ ...state, waypoint: { stepY: state.waypoint.stepY + num, stepX: state.waypoint.stepX } }),
-            S: (num, state) => ({ ...state, waypoint: { stepY: state.waypoint.stepY - num, stepX: state.waypoint.stepX } }),
-            W: (num, state) => ({ ...state, waypoint: { stepY: state.waypoint.stepY, stepX: state.waypoint.stepX - num } }),
-            E: (num, state) => ({ ...state, waypoint: { stepY: state.waypoint.stepY, stepX: state.waypoint.stepX + num } }),
+            N: (num, state) => ({ ...state, waypoint: { ...state.waypoint, stepY: state.waypoint.stepY + num } }),
+            S: (num, state) => ({ ...state, waypoint: { ...state.waypoint, stepY: state.waypoint.stepY - num } }),
+            W: (num, state) => ({ ...state, waypoint: { ...state.waypoint, stepX: state.waypoint.stepX - num } }),
+            E: (num, state) => ({ ...state, waypoint: { ...state.waypoint, stepX: state.waypoint.stepX + num } }),
             F: (num, state) => ({ ...state, coord: { x: state.coord.x + num*state.waypoint.stepX, y: state.coord.y + num*state.waypoint.stepY} }),
             R: (num, state) => ({ ...state, waypoint: reduceTimes(num/90, ROTATIONS_TRANSFORMS.CLOCKWISE, state.waypoint) }),
             L: (num, state) => ({ ...state, waypoint: reduceTimes(num/90, ROTATIONS_TRANSFORMS.COUNTER_CLOCKWISE, state.waypoint) }),
