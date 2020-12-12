@@ -1,5 +1,4 @@
-import {extractColumnBasedValues, readLines} from "./utils";
-import {INPUT} from "../test/2020-12.inputs";
+import {extractColumnBasedValues, reduceTimes} from "./utils";
 
 type ShipCoord = {x: number, y: number};
 // directions
@@ -82,17 +81,9 @@ export class D11ShipQ2 extends D11Ship<StateQ2>{
             W: (num, state) => ({ ...state, waypoint: { stepY: state.waypoint.stepY, stepX: state.waypoint.stepX - num } }),
             E: (num, state) => ({ ...state, waypoint: { stepY: state.waypoint.stepY, stepX: state.waypoint.stepX + num } }),
             F: (num, state) => ({ ...state, coord: { x: state.coord.x + num*state.waypoint.stepX, y: state.coord.y + num*state.waypoint.stepY} }),
-            R: (num, state) => ({ ...state, waypoint: D11ShipQ2.applyRotation(state.waypoint, "CLOCKWISE", num/90) }),
-            L: (num, state) => ({ ...state, waypoint: D11ShipQ2.applyRotation(state.waypoint, "COUNTER_CLOCKWISE", num/90) }),
+            R: (num, state) => ({ ...state, waypoint: reduceTimes(num/90, ROTATIONS_TRANSFORMS.CLOCKWISE, state.waypoint) }),
+            L: (num, state) => ({ ...state, waypoint: reduceTimes(num/90, ROTATIONS_TRANSFORMS.COUNTER_CLOCKWISE, state.waypoint) }),
         })
-    }
-
-    private static applyRotation(waypoint: Waypoint, rotationType: RotationType, times: number): Waypoint {
-        let result: Waypoint = waypoint;
-        for(var i=0; i<times; i++) {
-            result = ROTATIONS_TRANSFORMS[rotationType](result);
-        }
-        return result;
     }
 }
 

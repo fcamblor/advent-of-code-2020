@@ -139,3 +139,11 @@ export function readLines(str: string): string[] {
 export function readLineGroups(str: string): string[] {
     return str.split(/\r?\n\r?\n/);
 }
+
+export function reduceTimes<T>(times: number, reducer: (accumulator: T, loopIndex: number) => T, accumulatorInit: T) {
+    let accumulator = accumulatorInit;
+    for(let i=0; i<times; i++) {
+        accumulator = reducer(accumulator, i);
+    }
+    return accumulator;
+}
