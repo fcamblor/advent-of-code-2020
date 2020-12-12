@@ -10,7 +10,8 @@ const WEST="W";
 const FORWARD="F";
 
 type Direction = (typeof NORTH)|(typeof WEST)|(typeof EAST)|(typeof SOUTH);
-export const DIRECTIONS: Direction[] = [ NORTH, EAST, SOUTH, WEST ];
+const DIRECTIONS: Direction[] = [ NORTH, EAST, SOUTH, WEST ];
+
 // actions
 const TURN_RIGHT="R";
 const TURN_LEFT="L";
@@ -93,4 +94,20 @@ export class D11ShipQ2 extends D11Ship<StateQ2>{
         }
         return result;
     }
+}
+
+function RUN_SHIP_Q1(commandsCells: GSheetCells) {
+    return runShip(new D11ShipQ1(), commandsCells);
+}
+
+function RUN_SHIP_Q2(commandsCells: GSheetCells) {
+    return runShip(new D11ShipQ2(), commandsCells);
+}
+
+function runShip(ship: D11Ship<any>, commandsCells: GSheetCells) {
+    const [commands] = extractColumnBasedValues<string>(commandsCells);
+    commands.forEach(command => {
+        ship.move(command);
+    })
+    return ship.manhattanDistance();
 }
