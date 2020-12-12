@@ -22,7 +22,7 @@ test("Q1 sample rounds are valid", () => {
         const stabilized = planeGrid.newRound(PlaneGrid.countDirectlyAdjacentSeatsAround, 4);
         const newSeats = planeGrid.seats();
 
-        console.log(`Round definition[${idx}] : stabilized=${expectedRoundDefinition.stabilized}`);
+        // console.log(`Round definition[${idx}] : stabilized=${expectedRoundDefinition.stabilized}`);
         expect(newSeats).toEqual(expectedRound);
         expect(stabilized).toEqual(expectedRoundDefinition.stabilized);
     });
@@ -34,9 +34,9 @@ test("Solution to Q1", () => {
     let numberOfRounds = 1;
     while(!planeGrid.newRound(PlaneGrid.countDirectlyAdjacentSeatsAround, 4)) {
         numberOfRounds++;
-        console.log(`Next round => ${numberOfRounds}`);
+        // console.log(`Next round => ${numberOfRounds}`);
     }
-    console.log(numberOfRounds);
+    // console.log(numberOfRounds);
     expect(planeGrid.countOccupiedSeats()).toEqual(2152);
 })
 
@@ -87,7 +87,7 @@ test("Q2 sample rounds are valid", () => {
         const stabilized = planeGrid.newRound(PlaneGrid.countFirstSeatInSightOnEachDirection, 5);
         const newSeats = planeGrid.seats();
 
-        console.log(`Round definition[${idx}] : stabilized=${expectedRoundDefinition.stabilized}`);
+        // console.log(`Round definition[${idx}] : stabilized=${expectedRoundDefinition.stabilized}`);
         expect(newSeats).toEqual(expectedRound);
         expect(stabilized).toEqual(expectedRoundDefinition.stabilized);
     });
@@ -100,6 +100,6 @@ test("Solution to Q2", () => {
     while(!planeGrid.newRound(PlaneGrid.countFirstSeatInSightOnEachDirection, 5)) {
         numberOfRounds++;
     }
-    console.log(numberOfRounds);
+    // console.log(numberOfRounds);
     expect(planeGrid.countOccupiedSeats()).toEqual(1937);
 })
