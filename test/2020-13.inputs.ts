@@ -17,11 +17,27 @@ export const Q2_SAMPLES = [
             {line: 31, timeOffsetConstraint:6 },
             {line: 19, timeOffsetConstraint:7 },
         ],
-        expectedHighestPerTimeOffsetStep: {
+        perTimeOffsetSteps: [{
             step: 59, timeOffset: 4, constraints: [
                 {line: 59, timeOffsetConstraint:4 },
             ]
-        },
+        }, {
+            step: 31, timeOffset: 6, constraints: [
+                {line: 31, timeOffsetConstraint:6 },
+            ]
+        }, {
+            step: 19, timeOffset: 7, constraints: [
+                {line: 19, timeOffsetConstraint: 7},
+            ]
+        }, {
+            step: 13, timeOffset: 1, constraints: [
+                {line: 13, timeOffsetConstraint: 1},
+            ]
+        }, {
+            step: 7, timeOffset: 0, constraints: [
+                {line: 7,  timeOffsetConstraint:0 },
+            ]
+        }],
         expectedTimestamp: 1068781
     },
     {
@@ -36,11 +52,19 @@ export const Q2_SAMPLES = [
             {line: 13, timeOffsetConstraint:2 },
             {line: 19, timeOffsetConstraint:3 },
         ],
-        expectedHighestPerTimeOffsetStep: {
+        perTimeOffsetSteps: [{
             step: 19, timeOffset: 3, constraints: [
-                {line: 19, timeOffsetConstraint:3 },
+                {line: 19, timeOffsetConstraint: 3},
             ]
-        },
+        }, {
+            step: 17, timeOffset: 0, constraints: [
+                {line: 17, timeOffsetConstraint:0 },
+            ]
+        }, {
+            step: 13, timeOffset: 2, constraints: [
+                {line: 13, timeOffsetConstraint:2 },
+            ]
+        }],
         expectedTimestamp: 3417
     },
     {
@@ -57,11 +81,23 @@ export const Q2_SAMPLES = [
             {line: 59, timeOffsetConstraint:2 },
             {line: 61, timeOffsetConstraint:3 },
         ],
-        expectedHighestPerTimeOffsetStep: {
+        perTimeOffsetSteps: [{
             step: 67, timeOffset: 0, constraints: [
-                {line: 67, timeOffsetConstraint:0 },
+                {line: 67, timeOffsetConstraint: 0},
             ]
-        },
+        }, {
+            step: 61, timeOffset: 3, constraints: [
+                {line: 61, timeOffsetConstraint:3 },
+            ]
+        }, {
+            step: 59, timeOffset: 2, constraints: [
+                {line: 59, timeOffsetConstraint:2 },
+            ]
+        }, {
+            step: 7, timeOffset: 1, constraints: [
+                {line: 7,  timeOffsetConstraint:1 },
+            ]
+        }],
         expectedTimestamp: 754018
     },
     {
@@ -78,11 +114,23 @@ export const Q2_SAMPLES = [
             {line: 59, timeOffsetConstraint:3 },
             {line: 61, timeOffsetConstraint:4 },
         ],
-        expectedHighestPerTimeOffsetStep: {
+        perTimeOffsetSteps: [{
             step: 67, timeOffset: 0, constraints: [
-                {line: 67, timeOffsetConstraint:0 },
+                {line: 67, timeOffsetConstraint: 0},
             ]
-        },
+        }, {
+            step: 61, timeOffset: 4, constraints: [
+                {line: 61, timeOffsetConstraint:4 },
+            ]
+        }, {
+            step: 59, timeOffset: 3, constraints: [
+                {line: 59, timeOffsetConstraint:3 },
+            ]
+        }, {
+            step: 7, timeOffset: 2, constraints: [
+                {line: 7,  timeOffsetConstraint:2 },
+            ]
+        }],
         expectedTimestamp: 779210
     },
     {
@@ -99,11 +147,23 @@ export const Q2_SAMPLES = [
             {line: 59, timeOffsetConstraint:3 },
             {line: 61, timeOffsetConstraint:4 },
         ],
-        expectedHighestPerTimeOffsetStep: {
+        perTimeOffsetSteps: [{
             step: 67, timeOffset: 0, constraints: [
-                {line: 67, timeOffsetConstraint:0 },
+                {line: 67, timeOffsetConstraint: 0},
             ]
-        },
+        }, {
+            step: 61, timeOffset: 4, constraints: [
+                {line: 61, timeOffsetConstraint:4 },
+            ]
+        }, {
+            step: 59, timeOffset: 3, constraints: [
+                {line: 59, timeOffsetConstraint:3 },
+            ]
+        }, {
+            step: 7, timeOffset: 1, constraints: [
+                {line: 7,  timeOffsetConstraint:1 },
+            ]
+        }],
         expectedTimestamp: 1261476
     },
     {
@@ -120,16 +180,28 @@ export const Q2_SAMPLES = [
             {line: 47,   timeOffsetConstraint:2 },
             {line: 1889, timeOffsetConstraint:3 },
         ],
-        expectedHighestPerTimeOffsetStep: {
+        perTimeOffsetSteps: [{
             step: 1889, timeOffset: 3, constraints: [
-                {line: 1889, timeOffsetConstraint:3 },
+                {line: 1889, timeOffsetConstraint: 3},
             ]
-        },
+        }, {
+            step: 1789, timeOffset: 0, constraints: [
+                {line: 1789, timeOffsetConstraint:0 },
+            ]
+        }, {
+            step: 47, timeOffset: 2, constraints: [
+                {line: 47,   timeOffsetConstraint:2 },
+            ]
+        }, {
+            step: 37, timeOffset: 1, constraints: [
+                {line: 37,   timeOffsetConstraint:1 },
+            ]
+        }],
         expectedTimestamp: 1202161486
     },
 ];
 
-export const Q13_INPUT =     {
+export const Q13_INPUT = {
     sample: `17,x,x,x,x,x,x,x,x,x,x,37,x,x,x,x,x,571,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,13,x,x,x,x,23,x,x,x,x,x,29,x,401,x,x,x,x,x,x,x,x,x,41,x,x,x,x,x,x,x,x,19`,
     expectedConstraints: [
         {line: 17,  timeOffsetConstraint:0 },
@@ -153,14 +225,34 @@ export const Q13_INPUT =     {
         {line: 41,  timeOffsetConstraint:17 },
         {line: 19,  timeOffsetConstraint:10 },
     ],
-    expectedHighestPerTimeOffsetStep: {
-        step: 571*23*29*41, timeOffset: 17, constraints: [
-            {line: 571, timeOffsetConstraint:17 },
-            {line: 23,  timeOffsetConstraint:17 },
-            {line: 29,  timeOffsetConstraint:17 },
-            {line: 41,  timeOffsetConstraint:17 },
+    perTimeOffsetSteps: [{
+        step: 571 * 23 * 29 * 41, timeOffset: 17, constraints: [
+            {line: 571, timeOffsetConstraint: 17},
+            {line: 23, timeOffsetConstraint: 17},
+            {line: 29, timeOffsetConstraint: 17},
+            {line: 41, timeOffsetConstraint: 17},
         ]
-    },
+    }, {
+        step: 401, timeOffset: 48, constraints: [
+            {line: 401, timeOffsetConstraint:48 },
+        ]
+    }, {
+        step: 37, timeOffset: 11, constraints: [
+            {line: 37,  timeOffsetConstraint:11 },
+        ]
+    }, {
+        step: 19, timeOffset: 10, constraints: [
+            {line: 19,  timeOffsetConstraint:10 },
+        ]
+    }, {
+        step: 17, timeOffset: 0, constraints: [
+            {line: 17,  timeOffsetConstraint:0 },
+        ]
+    }, {
+        step: 13, timeOffset: 9, constraints: [
+            {line: 13,  timeOffsetConstraint:9 },
+        ]
+    }],
     expectedTimestamp: 226845233210288
 };
 

@@ -68,30 +68,46 @@ type PerTimeOffsetStep = { timeOffset: number, constraints: BusLineConstraint[],
     - T+10 will have to be a multiple of 37*39 = 1443
     - T+17 will have to be a multiple of 571*23*29*41 = 14 138 399
 
+    Result for above input will be : [{
+        step: 571 * 23 * 29 * 41, timeOffset: 17, constraints: [
+            {line: 571, timeOffsetConstraint: 17},
+            {line: 23, timeOffsetConstraint: 17},
+            {line: 29, timeOffsetConstraint: 17},
+            {line: 41, timeOffsetConstraint: 17},
+        ]
+    }, {
+        step: 37 * 19, timeOffset: 10, constraints: [
+            {line: 37, timeOffsetConstraint: 10},
+            {line: 19, timeOffsetConstraint: 10},
+        ]
+    }, {
+        step: 401, timeOffset: 48, constraints: [
+            {line: 401, timeOffsetConstraint: 48},
+        ]
+    }, {
+        step: 17, timeOffset: 0, constraints: [
+            {line: 17, timeOffsetConstraint: 0},
+        ]
+    }, {
+        step: 13, timeOffset: 9, constraints: [
+            {line: 13, timeOffsetConstraint: 9},
+        ]
+    }]
+
     Latest case will be the most interesting one, as the solution will simply to check every multiples of 14 138 399
     and look for the first multiple which is dividable by other bus lines constraints
     This will be 14M times quickier than iterating over timestamps one by one :-)
  */
-export function extractPerTimeOffsetStepFrom(busLinesConstraints: BusLineConstraint[]) {
+export function extractPerTimeOffsetStepsFrom(busLinesConstraints: BusLineConstraint[]) {
     return Object.values(busLinesConstraints.reduce((perTimeOffsetLines, busLineConstraint) => {
         perTimeOffsetLines[busLineConstraint.timeOffsetConstraint] = perTimeOffsetLines[busLineConstraint.timeOffsetConstraint] || { constraints: [], step: 1, timeOffset: busLineConstraint.timeOffsetConstraint };
         perTimeOffsetLines[busLineConstraint.timeOffsetConstraint].constraints.push(busLineConstraint);
         perTimeOffsetLines[busLineConstraint.timeOffsetConstraint].step *= busLineConstraint.line;
         return perTimeOffsetLines;
-    }, {} as Record<number, PerTimeOffsetStep>));
+    }, {} as Record<number, PerTimeOffsetStep>)
+    // for deterministic return (sorting desc by step field)
+    ).sort((o1,o2) => o2.step - o1.step);
 }
-
-/*
-  See above comment, we're only keeping the best PerTimeOssetStep (the one with the highest value)
- */
-export function extractHighestStepMultiplicatorFrom(busLinesConstraints: BusLineConstraint[]) {
-    const perTimeOffsetLines = extractPerTimeOffsetStepFrom(busLinesConstraints);
-
-    // Keeping time offset with the highest step, as it will represent the quickiest way to solve the problem
-    const bestPerTimeOffset = perTimeOffsetLines.sort((o1, o2) => o2.step - o1.step)[0];
-    return bestPerTimeOffset;
-}
-
 
 /*
   Returns { allMatched: true }
@@ -161,12 +177,12 @@ export function findEarliestTimestampFor(rawConstraint: string) {
 
     const simplifiedBusLinesConstraints = minimizeTimeOffsets(busLinesConstraints);
 
-    const highestPerTimeOffsetStep = extractHighestStepMultiplicatorFrom(simplifiedBusLinesConstraints);
+    const perTimeOffsetSteps = extractPerTimeOffsetStepsFrom(simplifiedBusLinesConstraints);
 
     return {
         busLinesConstraints,
         simplifiedBusLinesConstraints,
-        highestPerTimeOffsetStep,
-        timestamp: findEarliestTimestampMatchingConstraints(simplifiedBusLinesConstraints, highestPerTimeOffsetStep)
+        perTimeOffsetSteps,
+        timestamp: findEarliestTimestampMatchingConstraints(simplifiedBusLinesConstraints, perTimeOffsetSteps[0])
     };
 }
