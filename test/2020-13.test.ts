@@ -7,3 +7,7 @@ test("Q2 samples", () => {
         expect(findEarliestTimestampFor(testSample.sample)).toEqual(testSample.expected);
     })
 })
+
+test("Q2 input", () => {
+    expect(findEarliestTimestampFor(Q13_INPUT, 100000000000000)).toEqual(0);
+})

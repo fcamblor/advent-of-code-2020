@@ -37,11 +37,16 @@ export function allBusLineConstraintsMatches(timestamp: number, busLinesConstrai
     }, { allMatched: true, matchedBusLines: [] as Line[], unmatchedBusLines: [] as Line[] })
 }
 
-export function findEarliestTimestampMatchingConstraints(busLinesConstraints: BusLineConstraint[]) {
+export function findEarliestTimestampMatchingConstraints(busLinesConstraints: BusLineConstraint[], starting: number) {
     const maxLine = Math.max(...busLinesConstraints.map(c => c.line));
     const highestBusLineConstraint = busLinesConstraints.find(blc => blc.line === maxLine)!;
 
-    let constraintsMatched = false, timestamp = highestBusLineConstraint.line - highestBusLineConstraint.timeOffsetConstraint;
+    let startingTimestamp = starting;
+    while((startingTimestamp % highestBusLineConstraint.line) !== 0) {
+        startingTimestamp++;
+    }
+
+    let constraintsMatched = false, timestamp = startingTimestamp - highestBusLineConstraint.timeOffsetConstraint;
     while(!constraintsMatched) {
         let constraintsMatch = allBusLineConstraintsMatches(timestamp, busLinesConstraints);
 
@@ -52,7 +57,7 @@ export function findEarliestTimestampMatchingConstraints(busLinesConstraints: Bu
     return timestamp - maxLine;
 }
 
-export function findEarliestTimestampFor(rawConstraint: string) {
+export function findEarliestTimestampFor(rawConstraint: string, starting: number = 0) {
     const busLinesConstraints = readBusLinesConstraints(rawConstraint);
-    return findEarliestTimestampMatchingConstraints(busLinesConstraints);
+    return findEarliestTimestampMatchingConstraints(busLinesConstraints, starting);
 }
