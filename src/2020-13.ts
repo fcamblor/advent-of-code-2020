@@ -34,10 +34,11 @@ function readBusLinesConstraints(rawConstraint: string) {
 
 /*
   "Simplifies" (minimizes timeOffset) based on following rule :
-    following rule: { line: 19, timeOffset: 67 }
-    means that we need to find T so that "T+67 will be divisible by 19"
-    .. this will be equivalent to T + (69%19) = T+10 will be divisible by 19 too.
+    given a bus constraint like: { line: 19, timeOffset: 67 }
+    it means that we need to find T so that "T+67 will be divisible by 19"
+    this will be equivalent to : T + (69%19) = T+10 should be divisible by 19 too
     => we can replace/minimize 69 to 10 based on this rule
+    (you will understand on next step why this is something which is going to be a game changer)
  */
 function minimizeTimeOffsets(busLinesConstraints: BusLineConstraint[]) {
     return busLinesConstraints.map(c => ({...c, timeOffset: (c.timeOffset % c.line)  }));
@@ -47,8 +48,10 @@ type PerTimeOffsetStep = { timeOffset: number, constraints: BusLineConstraint[],
 
 /*
   Looking at "common offsets" in bus lines constraints, as those common offsets will allow to increase timestamp shifts
-  which will solve the problem quickier
-  For example, let's have following business lines constraints : [
+  which will solve the problem quicker.
+
+  For example, let's have following business "simplified" (see previous function) lines constraints :
+     [
         {line: 17,  timeOffset:0 },
         {line: 37,  timeOffset:10 },
         {line: 571, timeOffset:17 },
@@ -60,18 +63,18 @@ type PerTimeOffsetStep = { timeOffset: number, constraints: BusLineConstraint[],
         {line: 19,  timeOffset:10 },
     ]
 
-    We can see we have "common" time offsets (17 and 10)
-    It means that :
+    We can see we have "common" time offsets : 17 and 10
+    It means :
     - T+10 will have to be divisible by *both* 37 and 19
     - T+17 will have to be divisible by *both* 571, 23, 29 and 41
     Given that lines are prime numbers already, we can consider that :
     - T+10 will have to be a multiple of 37x39 = 1443
     - T+17 will have to be a multiple of 571x23x29x41 = 14 138 399
 
-    Also, we can see that we may have additional optimizations :
-    - bus line 50's timeOffset (=17) can be targetted by bus lane's 17 : 0 + 1 x 17 = 17
-    - bus line 401's timeOffset (=48) can be targetted by bus lane's 13 : 9 + 3 x 13 = 48
-    - bus line 401's timeOffset (=48) can be targetted by bus lane's 19 : 10 + 2 x 19 = 48
+    Also, we can see we may have additional optimizations :
+    - bus line 50's timeOffset (=17) can be targetted by bus lane's 17 :  (line 17 timeOffset =>) 0 +  (found multiple =>) 1 x 17 = 17
+    - bus line 401's timeOffset (=48) can be targetted by bus lane's 13 : (line 13 timeOffset =>) 9 +  (found multiple =>) 3 x 13 = 48
+    - bus line 401's timeOffset (=48) can be targetted by bus lane's 19 : (line 19 timeOffset =>) 10 + (found multiple =>) 2 x 19 = 48
     This affects :
     - T+17 multiples : instead of 14 138 399 (see previously), it will be 571x23x29x41x17 = 265 457 329
     - T+48 multiples : instead of 401, it will be 401x13x19 = 99 047
@@ -106,9 +109,9 @@ type PerTimeOffsetStep = { timeOffset: number, constraints: BusLineConstraint[],
         ]
     }]
 
-    Latest case will be the most interesting one, as the solution will simply to check every multiples of 14 138 399
-    and look for the first multiple which is dividable by other bus lines constraints
-    This will be 14M times quickier than iterating over timestamps one by one :-)
+    First result will be the most interesting one, as the algorithm will simply have to check every multiples of 265 457 329
+    and look for the first multiple which is dividable by other bus lines' constraints
+    This will be ~265M times quickier than iterating over timestamps one by one :-)
  */
 export function extractPerTimeOffsetStepsFrom(busLinesConstraints: BusLineConstraint[]) {
     return Object.values(busLinesConstraints.reduce((perTimeOffsetLines, busLineConstraint) => {
