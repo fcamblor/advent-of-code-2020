@@ -5,17 +5,17 @@ type Line = number;
 type RAW_READ_INPUT = (typeof TIME_OFFSET_CONSTRAINT)|string;
 type BusLineConstraint = {
     line: Line;
-    timeOffsetConstraint: number;
+    timeOffset: number;
 };
 
 /*
   "7,13,x,x,59,x,31,19"
   Gives : [
-        {line: 7,  timeOffsetConstraint:0 },
-        {line: 13, timeOffsetConstraint:1 },
-        {line: 59, timeOffsetConstraint:4 },
-        {line: 31, timeOffsetConstraint:6 },
-        {line: 19, timeOffsetConstraint:7 },
+        {line: 7,  timeOffset:0 },
+        {line: 13, timeOffset:1 },
+        {line: 59, timeOffset:4 },
+        {line: 31, timeOffset:6 },
+        {line: 19, timeOffset:7 },
   ]
  */
 function readBusLinesConstraints(rawConstraint: string) {
@@ -25,7 +25,7 @@ function readBusLinesConstraints(rawConstraint: string) {
             // Don't do anything
         } else {
             const line: Line = Number(readInput);
-            busLinesConstraints.push({ line, timeOffsetConstraint: index });
+            busLinesConstraints.push({ line, timeOffset: index });
         }
 
         return busLinesConstraints;
@@ -33,14 +33,14 @@ function readBusLinesConstraints(rawConstraint: string) {
 }
 
 /*
-  "Simplifies" (minimizes timeOffsetConstraint) based on following rule :
-    following rule: { line: 19, timeOffsetConstraint: 67 }
+  "Simplifies" (minimizes timeOffset) based on following rule :
+    following rule: { line: 19, timeOffset: 67 }
     means that we need to find T so that "T+67 will be divisible by 19"
     .. this will be equivalent to T + (69%19) = T+10 will be divisible by 19 too.
     => we can replace/minimize 69 to 10 based on this rule
  */
 function minimizeTimeOffsets(busLinesConstraints: BusLineConstraint[]) {
-    return busLinesConstraints.map(c => ({...c, timeOffsetConstraint: (c.timeOffsetConstraint%c.line)  }));
+    return busLinesConstraints.map(c => ({...c, timeOffset: (c.timeOffset % c.line)  }));
 }
 
 type PerTimeOffsetStep = { timeOffset: number, constraints: BusLineConstraint[], step: number};
@@ -49,15 +49,15 @@ type PerTimeOffsetStep = { timeOffset: number, constraints: BusLineConstraint[],
   Looking at "common offsets" in bus lines constraints, as those common offsets will allow to increase timestamp shifts
   which will solve the problem quickier
   For example, let's have following business lines constraints : [
-        {line: 17,  timeOffsetConstraint:0 },
-        {line: 37,  timeOffsetConstraint:10 },
-        {line: 571, timeOffsetConstraint:17 },
-        {line: 13,  timeOffsetConstraint:9 },
-        {line: 23,  timeOffsetConstraint:17 },
-        {line: 29,  timeOffsetConstraint:17 },
-        {line: 401, timeOffsetConstraint:48 },
-        {line: 41,  timeOffsetConstraint:17 },
-        {line: 19,  timeOffsetConstraint:10 },
+        {line: 17,  timeOffset:0 },
+        {line: 37,  timeOffset:10 },
+        {line: 571, timeOffset:17 },
+        {line: 13,  timeOffset:9 },
+        {line: 23,  timeOffset:17 },
+        {line: 29,  timeOffset:17 },
+        {line: 401, timeOffset:48 },
+        {line: 41,  timeOffset:17 },
+        {line: 19,  timeOffset:10 },
     ]
 
     We can see we have "common" time offsets (17 and 10)
@@ -69,9 +69,9 @@ type PerTimeOffsetStep = { timeOffset: number, constraints: BusLineConstraint[],
     - T+17 will have to be a multiple of 571x23x29x41 = 14 138 399
 
     Also, we can see that we may have additional optimizations :
-    - bus line 50's timeOffsetConstraint (=17) can be targetted by bus lane's 17 : 0 + 1 x 17 = 17
-    - bus line 401's timeOffsetConstraint (=48) can be targetted by bus lane's 13 : 9 + 3 x 13 = 48
-    - bus line 401's timeOffsetConstraint (=48) can be targetted by bus lane's 19 : 10 + 2 x 19 = 48
+    - bus line 50's timeOffset (=17) can be targetted by bus lane's 17 : 0 + 1 x 17 = 17
+    - bus line 401's timeOffset (=48) can be targetted by bus lane's 13 : 9 + 3 x 13 = 48
+    - bus line 401's timeOffset (=48) can be targetted by bus lane's 19 : 10 + 2 x 19 = 48
     This affects :
     - T+17 multiples : instead of 14 138 399 (see previously), it will be 571x23x29x41x17 = 265 457 329
     - T+48 multiples : instead of 401, it will be 401x13x19 = 99 047
@@ -79,30 +79,30 @@ type PerTimeOffsetStep = { timeOffset: number, constraints: BusLineConstraint[],
 
     Result for above input will be : [{
         step: 571 * 23 * 29 * 41 * 17, timeOffset: 17, constraints: [
-            {line: 571, timeOffsetConstraint: 17},
-            {line: 23, timeOffsetConstraint: 17},
-            {line: 29, timeOffsetConstraint: 17},
-            {line: 41, timeOffsetConstraint: 17},
-            {line: 17,  timeOffsetConstraint:0 },
+            {line: 571, timeOffset: 17},
+            {line: 23, timeOffset: 17},
+            {line: 29, timeOffset: 17},
+            {line: 41, timeOffset: 17},
+            {line: 17,  timeOffset:0 },
         ]
     }, {
         step: 401 * 13 * 19, timeOffset: 48, constraints: [
-            {line: 401, timeOffsetConstraint: 48},
-            {line: 13,  timeOffsetConstraint:9 },
-            {line: 19,  timeOffsetConstraint:10 },
+            {line: 401, timeOffset: 48},
+            {line: 13,  timeOffset:9 },
+            {line: 19,  timeOffset:10 },
         ]
     }, {
         step: 37 * 19, timeOffset: 10, constraints: [
-            {line: 37, timeOffsetConstraint: 10},
-            {line: 19, timeOffsetConstraint: 10},
+            {line: 37, timeOffset: 10},
+            {line: 19, timeOffset: 10},
         ]
     }, {
         step: 17, timeOffset: 0, constraints: [
-            {line: 17, timeOffsetConstraint: 0},
+            {line: 17, timeOffset: 0},
         ]
     }, {
         step: 13, timeOffset: 9, constraints: [
-            {line: 13, timeOffsetConstraint: 9},
+            {line: 13, timeOffset: 9},
         ]
     }]
 
@@ -112,18 +112,18 @@ type PerTimeOffsetStep = { timeOffset: number, constraints: BusLineConstraint[],
  */
 export function extractPerTimeOffsetStepsFrom(busLinesConstraints: BusLineConstraint[]) {
     return Object.values(busLinesConstraints.reduce((perTimeOffsetLines, busLineConstraint) => {
-        perTimeOffsetLines[busLineConstraint.timeOffsetConstraint] = perTimeOffsetLines[busLineConstraint.timeOffsetConstraint] || { constraints: [], step: 1, timeOffset: busLineConstraint.timeOffsetConstraint };
-        perTimeOffsetLines[busLineConstraint.timeOffsetConstraint].constraints.push(busLineConstraint);
-        perTimeOffsetLines[busLineConstraint.timeOffsetConstraint].step *= busLineConstraint.line;
+        perTimeOffsetLines[busLineConstraint.timeOffset] = perTimeOffsetLines[busLineConstraint.timeOffset] || { constraints: [], step: 1, timeOffset: busLineConstraint.timeOffset };
+        perTimeOffsetLines[busLineConstraint.timeOffset].constraints.push(busLineConstraint);
+        perTimeOffsetLines[busLineConstraint.timeOffset].step *= busLineConstraint.line;
         return perTimeOffsetLines;
     }, {} as Record<number, PerTimeOffsetStep>)
     // Some additional optimization to increase the step multiplicator if (by chance) we have some bus lines which are
     // a multiple of the perTimeOffsetStep.timeOffset
     ).map(perTimeOffsetStep => {
         busLinesConstraints.forEach(blc => {
-            if((blc.timeOffsetConstraint !== perTimeOffsetStep.timeOffset)
-                && (perTimeOffsetStep.timeOffset > blc.timeOffsetConstraint)
-                && ((perTimeOffsetStep.timeOffset - blc.timeOffsetConstraint) % blc.line) === 0
+            if((blc.timeOffset !== perTimeOffsetStep.timeOffset)
+                && (perTimeOffsetStep.timeOffset > blc.timeOffset)
+                && ((perTimeOffsetStep.timeOffset - blc.timeOffset) % blc.line) === 0
             ) {
                 perTimeOffsetStep.constraints.push(blc);
                 perTimeOffsetStep.step *= blc.line;
@@ -137,12 +137,12 @@ export function extractPerTimeOffsetStepsFrom(busLinesConstraints: BusLineConstr
 /*
   Returns { allMatched: true }
   if provided timestamp matches every provided busLinesConstraints, I mean :
-    (timestamp + busLinesContraints.timeOffsetConstraint) % busLinesContraints.timeOffsetConstraint.line === 0
+    (timestamp + busLinesContraints.timeOffset) % busLinesContraints.timeOffset.line === 0
  */
 function allBusLineConstraintsMatches(timestamp: number, busLinesConstraints: BusLineConstraint[]) {
     // console.log(`Testing timestamp=${timestamp}...`);
     for(let i=0; i<busLinesConstraints.length; i++) {
-        if((timestamp + busLinesConstraints[i].timeOffsetConstraint)%busLinesConstraints[i].line !== 0) {
+        if((timestamp + busLinesConstraints[i].timeOffset)%busLinesConstraints[i].line !== 0) {
             return { allMatched: false, firstBusLineNotMatching: busLinesConstraints[i] };
         }
     }
@@ -157,7 +157,7 @@ function findEarliestTimestampMatchingConstraints(busLinesConstraints: BusLineCo
 
     const shiftedBusLinesConstraints = busLinesConstraints.map(blc => ({
         line: blc.line,
-        timeOffsetConstraint: blc.timeOffsetConstraint - highestPerTimeOffsetStep.timeOffset
+        timeOffset: blc.timeOffset - highestPerTimeOffsetStep.timeOffset
     }));
 
     // For debug purposes
