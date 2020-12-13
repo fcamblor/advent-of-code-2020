@@ -41,9 +41,14 @@ export function findEarliestTimestampMatchingConstraints(busLinesConstraints: Bu
         startingTimestamp++;
     }
 
+    // If we have { line: 19, timeOffsetConstraint: 67 }
+    // it means that T+67 will be divisible by 19
+    // and if this is the case, we can say that T + (67%19) = T+10 will be divisible by 19 too
+    const simplifiedBusLinesConstraints = busLinesConstraints.map(c => ({...c, timeOffsetConstraint: (c.timeOffsetConstraint%c.line)  }));
+
     let constraintsMatched = false, timestamp = startingTimestamp - highestBusLineConstraint.timeOffsetConstraint;
     while(!constraintsMatched) {
-        let constraintsMatch = allBusLineConstraintsMatches(timestamp, busLinesConstraints);
+        let constraintsMatch = allBusLineConstraintsMatches(timestamp, simplifiedBusLinesConstraints);
 
         constraintsMatched = constraintsMatch.allMatched;
         timestamp += maxLine;
