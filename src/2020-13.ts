@@ -24,17 +24,12 @@ export function readBusLinesConstraints(rawConstraint: string) {
 
 export function allBusLineConstraintsMatches(timestamp: number, busLinesConstraints: BusLineConstraint[]) {
     // console.log(`Testing timestamp=${timestamp}...`);
-    return busLinesConstraints.reduce(({ allMatched: previousAllMatched, matchedBusLines, unmatchedBusLines }, busLineConstraint) => {
-        let allMatched = previousAllMatched;
-        if((timestamp + busLineConstraint.timeOffsetConstraint)%busLineConstraint.line === 0) {
-            matchedBusLines.push(busLineConstraint.line);
-        } else {
-            unmatchedBusLines.push(busLineConstraint.line);
-            allMatched = false;
+    for(let i=0; i<busLinesConstraints.length; i++) {
+        if((timestamp + busLinesConstraints[i].timeOffsetConstraint)%busLinesConstraints[i].line !== 0) {
+            return { allMatched: false, firstBusLineNotMatching: busLinesConstraints[i] };
         }
-
-        return { allMatched, matchedBusLines, unmatchedBusLines };
-    }, { allMatched: true, matchedBusLines: [] as Line[], unmatchedBusLines: [] as Line[] })
+    }
+    return { allMatched: true };
 }
 
 export function findEarliestTimestampMatchingConstraints(busLinesConstraints: BusLineConstraint[], starting: number) {
