@@ -23,7 +23,7 @@ export function readBusLinesConstraints(rawConstraint: string) {
 }
 
 export function allBusLineConstraintsMatches(timestamp: number, busLinesConstraints: BusLineConstraint[]) {
-    console.log(`Testing timestamp=${timestamp}...`);
+    // console.log(`Testing timestamp=${timestamp}...`);
     return busLinesConstraints.reduce(({ allMatched: previousAllMatched, matchedBusLines, unmatchedBusLines }, busLineConstraint) => {
         let allMatched = previousAllMatched;
         if((timestamp + busLineConstraint.timeOffsetConstraint)%busLineConstraint.line === 0) {
