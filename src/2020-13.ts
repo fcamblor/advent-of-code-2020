@@ -214,3 +214,7 @@ export function findEarliestTimestampFor(rawConstraint: string) {
         timestamp: findEarliestTimestampMatchingConstraints(simplifiedBusLinesConstraints, perTimeOffsetSteps[0])
     };
 }
+
+function FIND_EARLIEST_TIMESTAMP_FOR(rawConstraint: string) {
+    return findEarliestTimestampFor(rawConstraint).timestamp;
+}
