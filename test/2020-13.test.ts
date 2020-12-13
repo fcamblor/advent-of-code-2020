@@ -30,22 +30,25 @@ test("test extractPerTimeOffsetStepFrom()", () => {
 
     expect(perTimeOffsetSteps.length).toBe(5);
     expect(perTimeOffsetSteps[0]).toEqual({
-        step: 571 * 23 * 29 * 41, timeOffset: 17, constraints: [
+        step: 571 * 23 * 29 * 41 * 17, timeOffset: 17, constraints: [
             {line: 571, timeOffsetConstraint: 17},
             {line: 23, timeOffsetConstraint: 17},
             {line: 29, timeOffsetConstraint: 17},
             {line: 41, timeOffsetConstraint: 17},
+            {line: 17, timeOffsetConstraint: 0},
         ]
     });
     expect(perTimeOffsetSteps[1]).toEqual({
-        step: 37 * 19, timeOffset: 10, constraints: [
-            {line: 37, timeOffsetConstraint: 10},
+        step: 401 * 13 * 19, timeOffset: 48, constraints: [
+            {line: 401, timeOffsetConstraint: 48},
+            {line: 13, timeOffsetConstraint: 9},
             {line: 19, timeOffsetConstraint: 10},
         ]
     });
     expect(perTimeOffsetSteps[2]).toEqual({
-        step: 401, timeOffset: 48, constraints: [
-            {line: 401, timeOffsetConstraint: 48},
+        step: 37 * 19, timeOffset: 10, constraints: [
+            {line: 37, timeOffsetConstraint: 10},
+            {line: 19, timeOffsetConstraint: 10},
         ]
     });
     expect(perTimeOffsetSteps[3]).toEqual({

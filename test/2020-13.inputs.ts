@@ -18,16 +18,17 @@ export const Q2_SAMPLES = [
             {line: 19, timeOffsetConstraint:7 },
         ],
         perTimeOffsetSteps: [{
+            step: 19 * 7, timeOffset: 7, constraints: [
+                {line: 19, timeOffsetConstraint: 7},
+                {line: 7,  timeOffsetConstraint:0 },
+            ]
+        }, {
             step: 59, timeOffset: 4, constraints: [
                 {line: 59, timeOffsetConstraint:4 },
             ]
         }, {
             step: 31, timeOffset: 6, constraints: [
                 {line: 31, timeOffsetConstraint:6 },
-            ]
-        }, {
-            step: 19, timeOffset: 7, constraints: [
-                {line: 19, timeOffsetConstraint: 7},
             ]
         }, {
             step: 13, timeOffset: 1, constraints: [
@@ -226,15 +227,19 @@ export const Q13_INPUT = {
         {line: 19,  timeOffsetConstraint:10 },
     ],
     perTimeOffsetSteps: [{
-        step: 571 * 23 * 29 * 41, timeOffset: 17, constraints: [
+        step: 571 * 23 * 29 * 41 * 17, timeOffset: 17, constraints: [
             {line: 571, timeOffsetConstraint: 17},
             {line: 23, timeOffsetConstraint: 17},
             {line: 29, timeOffsetConstraint: 17},
             {line: 41, timeOffsetConstraint: 17},
+            {line: 17, timeOffsetConstraint: 0},
         ]
     }, {
-        step: 401, timeOffset: 48, constraints: [
+        step: 401 * 37 * 13 * 19, timeOffset: 48, constraints: [
             {line: 401, timeOffsetConstraint:48 },
+            {line: 37,  timeOffsetConstraint:11 },
+            {line: 13,  timeOffsetConstraint:9 },
+            {line: 19,  timeOffsetConstraint:10 },
         ]
     }, {
         step: 37, timeOffset: 11, constraints: [

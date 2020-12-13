@@ -65,24 +65,36 @@ type PerTimeOffsetStep = { timeOffset: number, constraints: BusLineConstraint[],
     - T+10 will have to be divisible by *both* 37 and 19
     - T+17 will have to be divisible by *both* 571, 23, 29 and 41
     Given that lines are prime numbers already, we can consider that :
-    - T+10 will have to be a multiple of 37*39 = 1443
-    - T+17 will have to be a multiple of 571*23*29*41 = 14 138 399
+    - T+10 will have to be a multiple of 37x39 = 1443
+    - T+17 will have to be a multiple of 571x23x29x41 = 14 138 399
+
+    Also, we can see that we may have additional optimizations :
+    - bus line 50's timeOffsetConstraint (=17) can be targetted by bus lane's 17 : 0 + 1 x 17 = 17
+    - bus line 401's timeOffsetConstraint (=48) can be targetted by bus lane's 13 : 9 + 3 x 13 = 48
+    - bus line 401's timeOffsetConstraint (=48) can be targetted by bus lane's 19 : 10 + 2 x 19 = 48
+    This affects :
+    - T+17 multiples : instead of 14 138 399 (see previously), it will be 571x23x29x41x17 = 265 457 329
+    - T+48 multiples : instead of 401, it will be 401x13x19 = 99 047
+
 
     Result for above input will be : [{
-        step: 571 * 23 * 29 * 41, timeOffset: 17, constraints: [
+        step: 571 * 23 * 29 * 41 * 17, timeOffset: 17, constraints: [
             {line: 571, timeOffsetConstraint: 17},
             {line: 23, timeOffsetConstraint: 17},
             {line: 29, timeOffsetConstraint: 17},
             {line: 41, timeOffsetConstraint: 17},
+            {line: 17,  timeOffsetConstraint:0 },
+        ]
+    }, {
+        step: 401 * 13 * 19, timeOffset: 48, constraints: [
+            {line: 401, timeOffsetConstraint: 48},
+            {line: 13,  timeOffsetConstraint:9 },
+            {line: 19,  timeOffsetConstraint:10 },
         ]
     }, {
         step: 37 * 19, timeOffset: 10, constraints: [
             {line: 37, timeOffsetConstraint: 10},
             {line: 19, timeOffsetConstraint: 10},
-        ]
-    }, {
-        step: 401, timeOffset: 48, constraints: [
-            {line: 401, timeOffsetConstraint: 48},
         ]
     }, {
         step: 17, timeOffset: 0, constraints: [
@@ -105,8 +117,21 @@ export function extractPerTimeOffsetStepsFrom(busLinesConstraints: BusLineConstr
         perTimeOffsetLines[busLineConstraint.timeOffsetConstraint].step *= busLineConstraint.line;
         return perTimeOffsetLines;
     }, {} as Record<number, PerTimeOffsetStep>)
+    // Some additional optimization to increase the step multiplicator if (by chance) we have some bus lines which are
+    // a multiple of the perTimeOffsetStep.timeOffset
+    ).map(perTimeOffsetStep => {
+        busLinesConstraints.forEach(blc => {
+            if((blc.timeOffsetConstraint !== perTimeOffsetStep.timeOffset)
+                && (perTimeOffsetStep.timeOffset > blc.timeOffsetConstraint)
+                && ((perTimeOffsetStep.timeOffset - blc.timeOffsetConstraint) % blc.line) === 0
+            ) {
+                perTimeOffsetStep.constraints.push(blc);
+                perTimeOffsetStep.step *= blc.line;
+            }
+        });
+        return perTimeOffsetStep;
     // for deterministic return (sorting desc by step field)
-    ).sort((o1,o2) => o2.step - o1.step);
+    }).sort((o1,o2) => o2.step - o1.step);
 }
 
 /*
