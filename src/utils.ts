@@ -159,3 +159,25 @@ export function numberToBits(num: number): ("0"|"1")[] {
 export function padLeft<T>(arr: T[], padding: number, paddingValue: T) {
     return Array(padding - arr.length).fill(paddingValue).concat(arr);
 }
+
+export function cartesian2<A1,A2>(...arrays: [A1[], A2[]]): [A1,A2][];
+export function cartesian2<A1,A2,A3>(...arrays: [ A1[], A2[], A3[] ]): [A1,A2,A3][];
+export function cartesian2<A1,A2,A3,A4>(...arrays: [ A1[], A2[], A3[], A4[] ]): [A1,A2,A3,A4][];
+export function cartesian2<A1,A2,A3,A4,A5>(...arrays: [ A1[], A2[], A3[], A4[], A5[] ]): [A1,A2,A3,A4,A5][];
+export function cartesian2<A1,A2,A3,A4,A5,A6>(...arrays: [ A1[], A2[], A3[], A4[], A5[], A6[] ]): [A1,A2,A3,A4,A5,A6][];
+export function cartesian2(...arrays: any[]): any[][] {
+    return cartesian(arrays);
+}
+// source : https://stackoverflow.com/a/36234242/476345
+export function cartesian(...arrays: any[][]): any[][] {
+    return arrays.reduce((a,b) => {
+        return a.map((x: any) => {
+            return b.map((y: any) => {
+                return x.concat([y]);
+            })
+        }).reduce(
+            (a,b) => a.concat(b),
+            []
+        )
+    }, [ [] ]);
+}
