@@ -11,7 +11,7 @@ export type MASK_VALUE = (typeof OVERWRITE_WITH_0)|(typeof OVERWRITE_WITH_1)|(ty
 export type BIT_VALUE = "0"|"1";
 
 type D14State = {
-    mask: D14Mask|undefined;
+    mask: D14Q1Mask|undefined;
     memory: Record<number, number>;
 };
 
@@ -19,9 +19,15 @@ abstract class D14Command {
     abstract runOn(state: D14State): D14State;
 }
 
-export class D14Mask extends D14Command {
+export abstract class D14Mask extends D14Command {
     constructor(public readonly values: MASK_VALUE[]) {
         super();
+    }
+}
+
+export class D14Q1Mask extends D14Mask {
+    constructor(public readonly values: MASK_VALUE[]) {
+        super(values);
     }
     runOn(state: D14State): D14State {
         return {...state, mask: this };
@@ -59,10 +65,10 @@ export class D14Mem extends D14Command {
 }
 
 
-export function q14Read(str: string, memType: "bits"|"number"): D14Command[] {
+export function q14Read(str: string, memType: "bits"|"number", maskConstruct: (maskValues: MASK_VALUE[]) => D14Mask = (values) => new D14Q1Mask(values)): D14Command[] {
     return str.split("\n").map(line => {
         if(line.substr(0, "mask".length) === "mask") {
-            return new D14Mask(line.match(/^mask = ([01X]{36})$/)![1].split("") as MASK_VALUE[])
+            return maskConstruct(line.match(/^mask = ([01X]{36})$/)![1].split("") as MASK_VALUE[]);
         } else if(memType==="bits" && line.substr(0, "mem".length) === "mem") {
             return new D14Mem(Number(line.match(/^mem\[([0-9]+)\].+$/)![1]),
                 line.match(/^mem\[[0-9]+\] = ([01]+)$/)![1].split("") as BIT_VALUE[], undefined);
