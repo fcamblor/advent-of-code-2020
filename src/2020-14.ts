@@ -1,4 +1,4 @@
-import {bitToNumber, numberToBits, padLeft} from "./utils";
+import {bitsToNumber, combine, numberToBits, padLeft} from "./utils";
 
 
 const OVERWRITE_WITH_1 = "1";
@@ -9,9 +9,10 @@ const MASK_SIZE = 36;
 
 export type MASK_VALUE = (typeof OVERWRITE_WITH_0)|(typeof OVERWRITE_WITH_1)|(typeof KEEP);
 export type BIT_VALUE = "0"|"1";
+export type FLOATABLE_BIT_VALUE = BIT_VALUE|"X";
 
 type D14State = {
-    mask: D14Q1Mask|undefined;
+    mask: D14Mask|undefined;
     memory: Record<number, number>;
 };
 
@@ -23,35 +24,39 @@ export abstract class D14Mask extends D14Command {
     constructor(public readonly values: MASK_VALUE[]) {
         super();
     }
+
+    runOn(state: D14State): D14State {
+        return {...state, mask: this};
+    }
+
+    abstract applyOn(value: number, memoryOffset: number, state: D14State): D14State;
+}
+
+export abstract class D14Mem extends D14Command {
+    constructor(public readonly offset: number, public readonly bitValues: BIT_VALUE[], public readonly value: number) {
+        super();
+    }
 }
 
 export class D14Q1Mask extends D14Mask {
     constructor(public readonly values: MASK_VALUE[]) {
         super(values);
     }
-    runOn(state: D14State): D14State {
-        return {...state, mask: this };
-    }
-    applyOn(bitValues: BIT_VALUE[]): number {
-        return bitValues.reverse().reduce((sum, bitValue, index) => {
-            let bit: 0|1;
-            if(this.values[MASK_SIZE - 1 - index] === "X") {
-                bit = Number(bitValue) as 0|1;
-            } else {
-                bit = Number(this.values[MASK_SIZE - 1 - index]) as 0|1;
-            }
-            const val = (bit===0)?0:Math.pow(2, index);
-            return sum + val;
-        }, 0);
+    applyOn(value: number, memoryOffset: number, state: D14State): D14State {
+        const bitValues = padLeft(numberToBits(value), MASK_SIZE, "0");
+        const maskedValue = bitsToNumber(combine(this.values, bitValues).map(([ maskValue, bitValue ]) => {
+            return maskValue==="X"?bitValue:maskValue;
+        }));
+        return {...state, memory: {...state.memory, [memoryOffset]: maskedValue } };
     }
 }
-export class D14Mem extends D14Command {
-    public readonly value: number;
-    public readonly bitValues: BIT_VALUE[];
-    constructor(public readonly offset: number, bitValues: BIT_VALUE[]|undefined, value: number|undefined) {
-        super();
-        this.bitValues = bitValues || padLeft(numberToBits(value!), MASK_SIZE, "0");
-        this.value = value===undefined?bitToNumber(bitValues!):value;
+export class D14MQ1Mem extends D14Mem {
+    constructor(offset: number, bitValues: BIT_VALUE[]|undefined, value: number|undefined) {
+        super(
+            offset,
+            bitValues || padLeft(numberToBits(value!), MASK_SIZE, "0"),
+            value===undefined?bitsToNumber(bitValues!):value
+        );
     }
 
     runOn(state: D14State): D14State {
@@ -59,21 +64,24 @@ export class D14Mem extends D14Command {
             throw new Error("No mask defined !");
         }
 
-        const maskedValue = state.mask.applyOn(this.bitValues);
-        return {...state, memory: {...state.memory, [this.offset]: maskedValue } };
+        return state.mask.applyOn(this.value, this.offset, state);
     }
 }
 
 
-export function q14Read(str: string, memType: "bits"|"number", maskConstruct: (maskValues: MASK_VALUE[]) => D14Mask = (values) => new D14Q1Mask(values)): D14Command[] {
+export function q14Read(
+    str: string, memType: "bits"|"number",
+    maskConstruct: (maskValues: MASK_VALUE[]) => D14Mask = (values) => new D14Q1Mask(values),
+    memConstruct: (offset: number, bitValues: BIT_VALUE[]|undefined, value: number|undefined) => D14MQ1Mem = (offset, bitValues, value) => new D14MQ1Mem(offset, bitValues, value)
+): D14Command[] {
     return str.split("\n").map(line => {
         if(line.substr(0, "mask".length) === "mask") {
             return maskConstruct(line.match(/^mask = ([01X]{36})$/)![1].split("") as MASK_VALUE[]);
         } else if(memType==="bits" && line.substr(0, "mem".length) === "mem") {
-            return new D14Mem(Number(line.match(/^mem\[([0-9]+)\].+$/)![1]),
+            return memConstruct(Number(line.match(/^mem\[([0-9]+)\].+$/)![1]),
                 line.match(/^mem\[[0-9]+\] = ([01]+)$/)![1].split("") as BIT_VALUE[], undefined);
         } else if(memType==="number" && line.substr(0, "mem".length) === "mem") {
-            return new D14Mem(Number(line.match(/^mem\[([0-9]+)\].+$/)![1]),
+            return memConstruct(Number(line.match(/^mem\[([0-9]+)\].+$/)![1]),
                 undefined, Number(line.match(/^mem\[[0-9]+\] = ([0-9]+)$/)![1]))
         } else {
             throw new Error(`Not able to parse input : ${line}`);

@@ -148,7 +148,7 @@ export function reduceTimes<T>(times: number, reducer: (accumulator: T, loopInde
     return accumulator;
 }
 
-export function bitToNumber(bits: ("0"|"1")[]): number {
+export function bitsToNumber(bits: ("0"|"1")[]): number {
     // TODO: to optimize with bit shifts
     return bits.reverse().reduce((sum, val, idx) => sum + (val==="0"?0:Math.pow(2, idx)), 0);
 }
