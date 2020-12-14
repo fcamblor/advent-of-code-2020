@@ -147,3 +147,15 @@ export function reduceTimes<T>(times: number, reducer: (accumulator: T, loopInde
     }
     return accumulator;
 }
+
+export function bitToNumber(bits: ("0"|"1")[]): number {
+    // TODO: to optimize with bit shifts
+    return bits.reverse().reduce((sum, val, idx) => sum + (val==="0"?0:Math.pow(2, idx)), 0);
+}
+export function numberToBits(num: number): ("0"|"1")[] {
+    return (num >>> 0).toString(2).split("") as ("0"|"1")[];
+}
+
+export function padLeft<T>(arr: T[], padding: number, paddingValue: T) {
+    return Array(padding - arr.length).fill(paddingValue).concat(arr);
+}
