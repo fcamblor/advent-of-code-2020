@@ -1,4 +1,4 @@
-import {bitsToNumber, combine, numberToBits, padLeft} from "./utils";
+import {bitsToNumber, cartesian, combine, numberToBits, padLeft} from "./utils";
 
 
 const OVERWRITE_WITH_1 = "1";
@@ -9,7 +9,6 @@ const MASK_SIZE = 36;
 
 export type MASK_VALUE = (typeof OVERWRITE_WITH_0)|(typeof OVERWRITE_WITH_1)|(typeof KEEP);
 export type BIT_VALUE = "0"|"1";
-export type FLOATABLE_BIT_VALUE = BIT_VALUE|"X";
 
 type D14State = {
     mask: D14Mask|undefined;
@@ -50,6 +49,39 @@ export class D14Q1Mask extends D14Mask {
         return {...state, memory: {...state.memory, [memoryOffset]: maskedValue } };
     }
 }
+
+export class D14Q2Mask extends D14Mask {
+    constructor(public readonly values: MASK_VALUE[]) {
+        super(values);
+    }
+    applyOn(value: number, memoryOffset: number, state: D14State): D14State {
+        const memoryOffsetAsBits = padLeft(numberToBits(memoryOffset), MASK_SIZE, "0");
+
+        const { floatingOffsets, maskedMemoryOffset } = combine(this.values, memoryOffsetAsBits)
+            .reduce(({ floatingOffsets, maskedMemoryOffset }, [ maskValue, bitValue ], index) => {
+                return {
+                    floatingOffsets: floatingOffsets.concat(maskValue==="X"?[index]:[]),
+                    maskedMemoryOffset: maskedMemoryOffset.concat((["X","1"].includes(maskValue)?maskValue:bitValue) as MASK_VALUE)
+                };
+            }, { floatingOffsets: [] as number[], maskedMemoryOffset: [] as MASK_VALUE[] });
+
+        const memoryOffsetCombinations: {memoryOffset: number, value: BIT_VALUE}[][] = floatingOffsets.map(memoryOffset => [{ memoryOffset, value: "0" }, { memoryOffset, value: "1" }]);
+        const possibleMemoryOffsets = cartesian(...memoryOffsetCombinations).map((memoryOffsetCombinations: {memoryOffset: number, value: BIT_VALUE}[]) => {
+            const possibleMemoryOffset = memoryOffsetCombinations.reduce((buildingBits: MASK_VALUE[], memoryOffsetCombination) => {
+                buildingBits[memoryOffsetCombination.memoryOffset] = memoryOffsetCombination.value;
+                return buildingBits;
+            }, [...maskedMemoryOffset]);
+            return possibleMemoryOffset as BIT_VALUE[];
+        });
+
+        possibleMemoryOffsets.forEach(possibleMemoryOffset => {
+            state.memory[bitsToNumber(possibleMemoryOffset)] = value;
+        });
+
+        return state;
+    }
+}
+
 export class D14MQ1Mem extends D14Mem {
     constructor(offset: number, bitValues: BIT_VALUE[]|undefined, value: number|undefined) {
         super(
