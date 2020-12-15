@@ -4,25 +4,37 @@ export function q15Read(str: string) { return str.split(",").map(Number); }
 
 export function findNumbersAfter(startingNumbers: number[], requestedTurn: number) {
     const { perNumberLastSpokenIndex, listOfSpokenNumbers } = startingNumbers.reduce(({ perNumberLastSpokenIndex, listOfSpokenNumbers }, num, index) => {
-        perNumberLastSpokenIndex[num] = index+1;
+        perNumberLastSpokenIndex.set(num, index+1);
         return { perNumberLastSpokenIndex, listOfSpokenNumbers: listOfSpokenNumbers.concat([ num ]) };
-    }, { perNumberLastSpokenIndex: {} as Record<number,number>, listOfSpokenNumbers: [] as number[] })
+    }, { perNumberLastSpokenIndex: new Map() as Map<number,number>, listOfSpokenNumbers: [] as number[] })
+
+    // For debug purposes
+    let logShown = false,
+        start = Date.now(),
+        tsPowerOfTenJumpsToShowLog = 3,
+        tsJumpToShowLog = Math.pow(10, tsPowerOfTenJumpsToShowLog); // aka 10000000000
 
     const { lastSpokenNumber, listOfSpokenNumbers: _ } = reduceRange(startingNumbers.length + 1, requestedTurn, ({ perNumberLastSpokenIndex, perNumberAnteLastSpokenIndex, lastSpokenNumber, listOfSpokenNumbers }, turn) => {
+        if(!logShown && turn > tsJumpToShowLog) {
+            console.log(`It took ${Date.now() - start}ms to reach 10^${tsPowerOfTenJumpsToShowLog}`);
+            tsJumpToShowLog *= 10;
+            tsPowerOfTenJumpsToShowLog++;
+        }
+
         let numberToSay;
-        if(!perNumberAnteLastSpokenIndex[lastSpokenNumber]) {
+        if(!perNumberAnteLastSpokenIndex.has(lastSpokenNumber)) {
             numberToSay = 0;
         } else {
-            numberToSay = perNumberLastSpokenIndex[lastSpokenNumber] - perNumberAnteLastSpokenIndex[lastSpokenNumber];
+            numberToSay = perNumberLastSpokenIndex.get(lastSpokenNumber)! - perNumberAnteLastSpokenIndex.get(lastSpokenNumber)!;
         }
 
-        if(perNumberLastSpokenIndex[numberToSay]) {
-            perNumberAnteLastSpokenIndex[numberToSay] = perNumberLastSpokenIndex[numberToSay];
+        if(perNumberLastSpokenIndex.has(numberToSay)) {
+            perNumberAnteLastSpokenIndex.set(numberToSay, perNumberLastSpokenIndex.get(numberToSay)!);
         }
-        perNumberLastSpokenIndex[numberToSay] = turn;
+        perNumberLastSpokenIndex.set(numberToSay, turn);
 
         return { perNumberLastSpokenIndex, perNumberAnteLastSpokenIndex, lastSpokenNumber: numberToSay, listOfSpokenNumbers: listOfSpokenNumbers.concat([ numberToSay ]) };
-    }, { perNumberLastSpokenIndex, perNumberAnteLastSpokenIndex: {} as Record<number,number>, lastSpokenNumber: startingNumbers[startingNumbers.length-1], listOfSpokenNumbers });
+    }, { perNumberLastSpokenIndex, perNumberAnteLastSpokenIndex: new Map() as Map<number,number>, lastSpokenNumber: startingNumbers[startingNumbers.length-1], listOfSpokenNumbers });
 
     return { lastSpokenNumber, listOfSpokenNumbers };
 }
