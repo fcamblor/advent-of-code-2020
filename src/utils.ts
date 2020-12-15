@@ -141,8 +141,12 @@ export function readLineGroups(str: string): string[] {
 }
 
 export function reduceTimes<T>(times: number, reducer: (accumulator: T, loopIndex: number) => T, accumulatorInit: T) {
+    return reduceRange(0, times-1, reducer, accumulatorInit);
+}
+
+export function reduceRange<T>(start: number, endIncluded: number, reducer: (accumulator: T, loopIndex: number) => T, accumulatorInit: T) {
     let accumulator = accumulatorInit;
-    for(let i=0; i<times; i++) {
+    for(let i=start; i<=endIncluded; i++) {
         accumulator = reducer(accumulator, i);
     }
     return accumulator;
