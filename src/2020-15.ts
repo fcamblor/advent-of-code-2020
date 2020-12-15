@@ -3,10 +3,10 @@ import {extractColumnBasedValues, reduceRange, reduceTimes, rotateMatrix} from "
 export function q15Read(str: string) { return str.split(",").map(Number); }
 
 export function findNumbersAfter(startingNumbers: number[], requestedTurn: number) {
-    const { perNumberLastSpokenIndex, listOfSpokenNumbers } = startingNumbers.reduce(({ perNumberLastSpokenIndex, listOfSpokenNumbers }, num, index) => {
+    const { perNumberLastSpokenIndex } = startingNumbers.reduce(({ perNumberLastSpokenIndex }, num, index) => {
         perNumberLastSpokenIndex.set(num, index+1);
-        return { perNumberLastSpokenIndex, listOfSpokenNumbers: listOfSpokenNumbers.concat([ num ]) };
-    }, { perNumberLastSpokenIndex: new Map() as Map<number,number>, listOfSpokenNumbers: [] as number[] })
+        return { perNumberLastSpokenIndex };
+    }, { perNumberLastSpokenIndex: new Map() as Map<number,number> })
 
     // For debug purposes
     let logShown = false,
@@ -14,7 +14,7 @@ export function findNumbersAfter(startingNumbers: number[], requestedTurn: numbe
         tsPowerOfTenJumpsToShowLog = 3,
         tsJumpToShowLog = Math.pow(10, tsPowerOfTenJumpsToShowLog); // aka 10000000000
 
-    const { lastSpokenNumber, listOfSpokenNumbers: _ } = reduceRange(startingNumbers.length + 1, requestedTurn, ({ perNumberLastSpokenIndex, perNumberAnteLastSpokenIndex, lastSpokenNumber, listOfSpokenNumbers }, turn) => {
+    const { lastSpokenNumber } = reduceRange(startingNumbers.length + 1, requestedTurn, ({ perNumberLastSpokenIndex, perNumberAnteLastSpokenIndex, lastSpokenNumber }, turn) => {
         if(!logShown && turn > tsJumpToShowLog) {
             console.log(`It took ${Date.now() - start}ms to reach 10^${tsPowerOfTenJumpsToShowLog}`);
             tsJumpToShowLog *= 10;
@@ -33,12 +33,12 @@ export function findNumbersAfter(startingNumbers: number[], requestedTurn: numbe
         }
         perNumberLastSpokenIndex.set(numberToSay, turn);
 
-        return { perNumberLastSpokenIndex, perNumberAnteLastSpokenIndex, lastSpokenNumber: numberToSay, listOfSpokenNumbers: listOfSpokenNumbers.concat([ numberToSay ]) };
-    }, { perNumberLastSpokenIndex, perNumberAnteLastSpokenIndex: new Map() as Map<number,number>, lastSpokenNumber: startingNumbers[startingNumbers.length-1], listOfSpokenNumbers });
+        return { perNumberLastSpokenIndex, perNumberAnteLastSpokenIndex, lastSpokenNumber: numberToSay };
+    }, { perNumberLastSpokenIndex, perNumberAnteLastSpokenIndex: new Map() as Map<number,number>, lastSpokenNumber: startingNumbers[startingNumbers.length-1] });
 
-    return { lastSpokenNumber, listOfSpokenNumbers };
+    return { lastSpokenNumber };
 }
 
 function SHOW_Q1_LIST_OF_SPOKEN_NUMBERS(list: string) {
-    return rotateMatrix([ findNumbersAfter(q15Read(list), 2020).listOfSpokenNumbers ]);
+    // return rotateMatrix([ findNumbersAfter(q15Read(list), 2020).listOfSpokenNumbers ]);
 }
