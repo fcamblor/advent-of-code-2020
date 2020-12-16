@@ -32,3 +32,17 @@ test("Q1 tickets check", () => {
     let constraints = D16Constraint.createFrom(D16_INPUTS.constraints);
     expect(new D16TicketChecker(constraints).sumOfInvalidNumbers(D16_INPUTS.nearbyTickets)).toEqual(23009);
 })
+
+test("Q2 constraint index matching", () => {
+    let constraints = D16Constraint.createFrom(D16_INPUTS.constraints);
+    let ticketChecker = new D16TicketChecker(constraints);
+    const validTicketsMatches = ticketChecker.filterValidTickets(D16_INPUTS.nearbyTickets+"\n"+D16_INPUTS.myTicket);
+    let constraintIndexes = ticketChecker.guessConstraintsTicketIndexes(validTicketsMatches);
+
+    let myTicketNumbers = D16_INPUTS.myTicket.split(",").map(Number);
+    const result = constraintIndexes.filter(c => c.constraint.name.indexOf("departure") === 0).reduce((result, constraint) => {
+        return result * myTicketNumbers[constraint.numColIdx];
+    }, 1);
+
+    expect(result).toEqual(10458887314153);
+})
