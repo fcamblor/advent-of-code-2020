@@ -31,6 +31,9 @@ export function findNumbersAfter(startingNumbers: number[], requestedTurn: numbe
     return { lastSpokenNumber: listOfSpokenNumbers[listOfSpokenNumbers.length-1], listOfSpokenNumbers };
 }
 
-function SHOW_Q1_LIST_OF_SPOKEN_NUMBERS(list: string) {
-    return rotateMatrix([ findNumbersAfter(q15Read(list), 2020).listOfSpokenNumbers ]);
+function SHOW_D15_LIST_OF_SPOKEN_NUMBERS(list: string, requestedTurns: number) {
+    return rotateMatrix([ findNumbersAfter(q15Read(list), requestedTurns).listOfSpokenNumbers ]);
+}
+function SHOW_D15_RESULT_OF_SPOKEN_NUMBERS(list: string, requestedTurns: number) {
+    return findNumbersAfter(q15Read(list), requestedTurns).lastSpokenNumber;
 }
