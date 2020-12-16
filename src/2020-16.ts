@@ -33,13 +33,13 @@ export class D16TicketChecker {
         return ticketsStr.split("\n").map(ticketsStr => {
             let ticketNums = ticketsStr.split(",").map(Number);
             const matchResult = ticketNums.reduce(({numbersMatching, numbersNotMatching}, num) => {
-                for(let i=0; i<this.constraints.length; i++) {
-                    if(this.constraints[i].matches(num)) {
-                        return { numbersMatching: numbersMatching.concat({ num, matchesWith: this.constraints[i] }), numbersNotMatching };
-                    }
+                const matchingConstraints = this.constraints.filter(constraint => constraint.matches(num));
+                if(matchingConstraints.length) {
+                    return { numbersMatching: numbersMatching.concat({ num, matchesWith: matchingConstraints }), numbersNotMatching };
+                } else {
+                    return {numbersMatching, numbersNotMatching: numbersNotMatching.concat(num)};
                 }
-                return {numbersMatching, numbersNotMatching: numbersNotMatching.concat(num)};
-             }, { numbersMatching: [] as { num: number, matchesWith: D16Constraint }[], numbersNotMatching: [] as number[] });
+             }, { numbersMatching: [] as { num: number, matchesWith: D16Constraint[] }[], numbersNotMatching: [] as number[] });
              return { ticketNums, matchResult };
         });
     }
