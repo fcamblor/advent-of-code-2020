@@ -9,7 +9,7 @@ import {
 
 
 test("Q1 reading constraints", () => {
-    let constraints = D16Constraint.createFrom(D16_INPUTS.constraints);
+    let constraints = D16Constraint.createFromRaw(D16_INPUTS.constraints);
     expect(constraints).toEqual([
         new D16Constraint("departure location",[{min:45, max:309}, {min:320, max:962}]),
         new D16Constraint("departure station",[{min:27, max:873}, {min:895, max:952}]),
@@ -35,23 +35,15 @@ test("Q1 reading constraints", () => {
 })
 
 test("Q1 tickets check", () => {
-    let constraints = D16Constraint.createFrom(D16_INPUTS.constraints);
-    expect(new D16TicketChecker(constraints).sumOfInvalidNumbers(D16_INPUTS.nearbyTickets)).toEqual(23009);
+    let constraints = D16Constraint.createFromRaw(D16_INPUTS.constraints);
+    expect(new D16TicketChecker(constraints).sumOfInvalidRawNumbers(D16_INPUTS.nearbyTickets)).toEqual(23009);
 })
 
 test("Q2 samples calculation", () => {
     expect(extractConstraintIndexes({
-        rawNearbyTickets: `
-3,9,18
-15,1,5
-5,14,9
-`.trim(),
+        rawNearbyTickets: ["3,9,18", "15,1,5", "5,14,9" ],
         myRawTicket: `11,12,13`,
-        rawConstraints: `
-class: 0-1 or 4-19
-row: 0-5 or 8-19
-seat: 0-13 or 16-19
-`.trim(),
+        rawConstraints: ["class: 0-1 or 4-19", "row: 0-5 or 8-19", "seat: 0-13 or 16-19" ]
     })).toEqual([
         { numColIdx: 0, constraint: new D16Constraint("row", [{min:0,max:5},{min:8,max:19}]) },
         { numColIdx: 1, constraint: new D16Constraint("class", [{min:0,max:1},{min:4,max:19}]) },
@@ -61,9 +53,9 @@ seat: 0-13 or 16-19
 
 test("Q2 calculation", () => {
     const constraintIndexes = extractConstraintIndexes({
-        rawNearbyTickets: D16_INPUTS.nearbyTickets,
+        rawNearbyTickets: D16_INPUTS.nearbyTickets.split("\n"),
         myRawTicket: D16_INPUTS.myTicket,
-        rawConstraints: D16_INPUTS.constraints,
+        rawConstraints: D16_INPUTS.constraints.split("\n"),
     });
 
     let ticket = new D16TicketValuesExtractor(constraintIndexes).readRawTicket(D16_INPUTS.myTicket);

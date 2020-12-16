@@ -1,5 +1,4 @@
-import {ensureArraysHaveSameLength, reduceRange} from "./utils";
-import {D16_INPUTS} from "../test/2020-16.inputs";
+import {ensureArraysHaveSameLength, extractColumnBasedValues} from "./utils";
 
 
 type MinMaxConstraint = { min: number; max: number; };
@@ -17,8 +16,12 @@ export class D16Constraint {
         return false;
     }
 
-    public static createFrom(str: string) {
-        return str.split("\n").map(line => {
+    public static createFromRaw(str: string) {
+        return D16Constraint.createFrom(str.split("\n"));
+    }
+
+    public static createFrom(constraintLines: string[]) {
+        return constraintLines.map(line => {
             const match = line.match(/^([a-zA-Z\s]+): ([0-9]+)-([0-9]+) or ([0-9]+)-([0-9]+)+$/);
             const [ _, name, min0, max0, min1, max1 ] = [...match!];
             return new D16Constraint(name, [{min: Number(min0), max: Number(max0)}, {min: Number(min1), max: Number(max1)}]);
@@ -30,8 +33,8 @@ export class D16TicketChecker {
     constructor(public readonly constraints: D16Constraint[]) {
     }
 
-    public checkTickets(ticketsStr: string) {
-        return ticketsStr.split("\n").map(ticketsStr => {
+    public checkTickets(ticketsStr: string[]) {
+        return ticketsStr.map(ticketsStr => {
             let ticketNums = ticketsStr.split(",").map(Number);
             const matchResult = ticketNums.reduce(({numbersMatching, numbersNotMatching}, num, numIndex) => {
                 const matchingConstraints = this.constraints.filter(constraint => constraint.matches(num));
@@ -45,7 +48,7 @@ export class D16TicketChecker {
         });
     }
 
-    public filterValidTickets(ticketsStr: string) {
+    public filterValidTickets(ticketsStr: string[]) {
         return this.checkTickets(ticketsStr)
             .filter(result => result.matchResult.numbersNotMatching.length===0);
     }
@@ -82,7 +85,11 @@ export class D16TicketChecker {
         return perColIdxMatchingConstraints.map(c => ({ numColIdx: c.numColIdx, constraint: c.constraintsMatchingAllLines[0] })).sort((c1, c2) => c1.numColIdx - c2.numColIdx);
     }
 
-    public sumOfInvalidNumbers(ticketsStr: string) {
+    public sumOfInvalidRawNumbers(rawTicketsStr: string) {
+        return this.sumOfInvalidNumbers(rawTicketsStr.split("\n"));
+    }
+
+    public sumOfInvalidNumbers(ticketsStr: string[]) {
         const result = this.checkTickets(ticketsStr);
         return result.reduce((sumOfInvalidNumbers, checkResult) => {
             return sumOfInvalidNumbers + checkResult.matchResult.numbersNotMatching.reduce((sum, num) => sum+num, 0);
@@ -102,13 +109,31 @@ export class D16TicketValuesExtractor {
     }
 }
 
-export function extractConstraintIndexes({rawConstraints, myRawTicket, rawNearbyTickets}: { rawConstraints: string, myRawTicket: string, rawNearbyTickets: string}) {
+export function extractConstraintIndexes({rawConstraints, myRawTicket, rawNearbyTickets}: { rawConstraints: string[], myRawTicket: string, rawNearbyTickets: string[]}) {
     let constraints = D16Constraint.createFrom(rawConstraints);
     let ticketChecker = new D16TicketChecker(constraints);
-    const validTicketsMatches = ticketChecker.filterValidTickets(rawNearbyTickets+"\n"+myRawTicket);
+    const validTicketsMatches = ticketChecker.filterValidTickets(rawNearbyTickets.concat(myRawTicket));
     return ticketChecker.guessConstraintsTicketIndexes(validTicketsMatches);
 }
 
 export function calculateD16Q2(ticket: Record<string, number>, fieldNameFilter: string) {
     return Object.keys(ticket).filter(k => k.indexOf(fieldNameFilter) !== -1).reduce((result, key) => result * ticket[key], 1);
+}
+
+function FIND_INVALID_NUMBERS(constraintCells: GSheetCells, nearbyTicketsCells: GSheetCells) {
+    const [ rawConstraints, rawNearbyCells ] = extractColumnBasedValues<string, string>(constraintCells, nearbyTicketsCells);
+    let constraints = D16Constraint.createFrom(rawConstraints);
+    return new D16TicketChecker(constraints).checkTickets(rawNearbyCells).map(r => r.matchResult.numbersNotMatching);
+}
+
+function FIND_TICKET_VALUES(myTicket: string, constraintCells: GSheetCells, nearbyTicketsCells: GSheetCells) {
+    const [ rawConstraints, rawNearbyCells ] = extractColumnBasedValues<string, string>(constraintCells, nearbyTicketsCells);
+    const constraintIndexes = extractConstraintIndexes({
+        rawNearbyTickets: rawNearbyCells,
+        myRawTicket: myTicket,
+        rawConstraints: rawConstraints,
+    });
+
+    let ticket = new D16TicketValuesExtractor(constraintIndexes).readRawTicket(myTicket);
+    return Object.keys(ticket).map(k => [ k, ticket[k] ]);
 }
