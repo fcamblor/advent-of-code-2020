@@ -1,4 +1,5 @@
 import {ensureArraysHaveSameLength, reduceRange} from "./utils";
+import {D16_INPUTS} from "../test/2020-16.inputs";
 
 
 type MinMaxConstraint = { min: number; max: number; };
@@ -87,4 +88,27 @@ export class D16TicketChecker {
             return sumOfInvalidNumbers + checkResult.matchResult.numbersNotMatching.reduce((sum, num) => sum+num, 0);
         }, 0);
     }
+}
+
+export class D16TicketValuesExtractor {
+    constructor(public readonly constraintIndexes: {numColIdx: number, constraint: D16Constraint}[]) {}
+
+    readRawTicket(rawTicket: string): Record<string, number> {
+        let ticketNumbers = rawTicket.split(",").map(Number);
+        return this.constraintIndexes.reduce((ticket, constraintIndex) => {
+            ticket[constraintIndex.constraint.name] = ticketNumbers[constraintIndex.numColIdx];
+            return ticket;
+        }, {} as Record<string, number>);
+    }
+}
+
+export function extractConstraintIndexes({rawConstraints, myRawTicket, rawNearbyTickets}: { rawConstraints: string, myRawTicket: string, rawNearbyTickets: string}) {
+    let constraints = D16Constraint.createFrom(rawConstraints);
+    let ticketChecker = new D16TicketChecker(constraints);
+    const validTicketsMatches = ticketChecker.filterValidTickets(rawNearbyTickets+"\n"+myRawTicket);
+    return ticketChecker.guessConstraintsTicketIndexes(validTicketsMatches);
+}
+
+export function calculateD16Q2(ticket: Record<string, number>, fieldNameFilter: string) {
+    return Object.keys(ticket).filter(k => k.indexOf(fieldNameFilter) !== -1).reduce((result, key) => result * ticket[key], 1);
 }

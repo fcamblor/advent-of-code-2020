@@ -1,5 +1,11 @@
 import {D16_INPUTS} from "./2020-16.inputs";
-import {D16Constraint, D16TicketChecker} from "../src/2020-16";
+import {
+    calculateD16Q2,
+    D16Constraint,
+    D16TicketChecker,
+    D16TicketValuesExtractor,
+    extractConstraintIndexes
+} from "../src/2020-16";
 
 
 test("Q1 reading constraints", () => {
@@ -33,16 +39,33 @@ test("Q1 tickets check", () => {
     expect(new D16TicketChecker(constraints).sumOfInvalidNumbers(D16_INPUTS.nearbyTickets)).toEqual(23009);
 })
 
-test("Q2 constraint index matching", () => {
-    let constraints = D16Constraint.createFrom(D16_INPUTS.constraints);
-    let ticketChecker = new D16TicketChecker(constraints);
-    const validTicketsMatches = ticketChecker.filterValidTickets(D16_INPUTS.nearbyTickets+"\n"+D16_INPUTS.myTicket);
-    let constraintIndexes = ticketChecker.guessConstraintsTicketIndexes(validTicketsMatches);
+test("Q2 samples calculation", () => {
+    expect(extractConstraintIndexes({
+        rawNearbyTickets: `
+3,9,18
+15,1,5
+5,14,9
+`.trim(),
+        myRawTicket: `11,12,13`,
+        rawConstraints: `
+class: 0-1 or 4-19
+row: 0-5 or 8-19
+seat: 0-13 or 16-19
+`.trim(),
+    })).toEqual([
+        { numColIdx: 0, constraint: new D16Constraint("row", [{min:0,max:5},{min:8,max:19}]) },
+        { numColIdx: 1, constraint: new D16Constraint("class", [{min:0,max:1},{min:4,max:19}]) },
+        { numColIdx: 2, constraint: new D16Constraint("seat", [{min:0,max:13},{min:16,max:19}]) },
+    ]);
+})
 
-    let myTicketNumbers = D16_INPUTS.myTicket.split(",").map(Number);
-    const result = constraintIndexes.filter(c => c.constraint.name.indexOf("departure") === 0).reduce((result, constraint) => {
-        return result * myTicketNumbers[constraint.numColIdx];
-    }, 1);
+test("Q2 calculation", () => {
+    const constraintIndexes = extractConstraintIndexes({
+        rawNearbyTickets: D16_INPUTS.nearbyTickets,
+        myRawTicket: D16_INPUTS.myTicket,
+        rawConstraints: D16_INPUTS.constraints,
+    });
 
-    expect(result).toEqual(10458887314153);
+    let ticket = new D16TicketValuesExtractor(constraintIndexes).readRawTicket(D16_INPUTS.myTicket);
+    expect(calculateD16Q2(ticket, "departure")).toEqual(10458887314153);
 })
