@@ -1,9 +1,9 @@
-import {Pocket3Dimension, Pocket4Dimension} from "../src/2020-17";
+import {D17_3DMatrix, D17_4DMatrix, PocketDimension} from "../src/2020-17";
 import {D17_INPUT, D17_Q1Sample} from "./2020-17.inputs";
 
 
 test("Q1 sample", () => {
-    const pocketDimension = new Pocket3Dimension();
+    const pocketDimension = new PocketDimension(new D17_3DMatrix());
     pocketDimension.initializeWith2D(D17_Q1Sample);
 
     for(var i=0; i<6; i++) {
@@ -14,7 +14,7 @@ test("Q1 sample", () => {
 })
 
 test("Q1", () => {
-    const pocketDimension = new Pocket3Dimension();
+    const pocketDimension = new PocketDimension(new D17_3DMatrix());
     pocketDimension.initializeWith2D(D17_INPUT);
 
     for(var i=0; i<6; i++) {
@@ -25,7 +25,7 @@ test("Q1", () => {
 })
 
 test("Q2 sample", () => {
-    const pocketDimension = new Pocket4Dimension();
+    const pocketDimension = new PocketDimension(new D17_4DMatrix());
     pocketDimension.initializeWith2D(D17_Q1Sample);
 
     for(var i=0; i<6; i++) {
@@ -36,7 +36,7 @@ test("Q2 sample", () => {
 })
 
 test("Q2", () => {
-    const pocketDimension = new Pocket4Dimension();
+    const pocketDimension = new PocketDimension(new D17_4DMatrix());
     pocketDimension.initializeWith2D(D17_INPUT);
 
     for(var i=0; i<6; i++) {
