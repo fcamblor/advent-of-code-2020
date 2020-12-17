@@ -1,9 +1,9 @@
-import {PocketDimension} from "../src/2020-17";
+import {Pocket3Dimension} from "../src/2020-17";
 import {D17_INPUT, D17_Q1Sample} from "./2020-17.inputs";
 
 
 test("Q1 sample", () => {
-    const pocketDimension = new PocketDimension();
+    const pocketDimension = new Pocket3Dimension();
     pocketDimension.initializeWith2D(D17_Q1Sample);
 
     for(var i=0; i<6; i++) {
@@ -14,7 +14,7 @@ test("Q1 sample", () => {
 })
 
 test("Q1", () => {
-    const pocketDimension = new PocketDimension();
+    const pocketDimension = new Pocket3Dimension();
     pocketDimension.initializeWith2D(D17_INPUT);
 
     for(var i=0; i<6; i++) {
