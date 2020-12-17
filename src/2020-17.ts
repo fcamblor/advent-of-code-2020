@@ -48,6 +48,7 @@ export abstract class D17Matrix<COORDS> {
                         break;
                     }
                 }
+                // If all steps are 0s, it means that we are on the activeCoord, and we shouldn't exclude it from its neighbors
                 if(!allStepsAre0) {
                     let neighborCoord = this.opts.applyStepsToCoord(activeCoord, perDimensionSteps);
                     currentActiveCoordNeighbors.push(neighborCoord);
@@ -92,7 +93,7 @@ export class D17_3DMatrix extends D17Matrix<D17_3DCoord> {
             coordsKeyExtractor: (coord) => `${coord.x}_${coord.y}_${coord.z}`,
             applyStepsToCoord: (coord, perDimensionSteps: number[]) => ({ x: coord.x+perDimensionSteps[0], y: coord.y+perDimensionSteps[1], z: coord.z+perDimensionSteps[2] }),
             createNew: (activeCubes => new D17_3DMatrix(activeCubes))
-        });
+        }, activeCubes);
     }
 }
 
@@ -105,7 +106,7 @@ export class D17_4DMatrix extends D17Matrix<D17_4DCoord> {
             coordsKeyExtractor: (coord) => `${coord.x}_${coord.y}_${coord.z}_${coord.w}`,
             applyStepsToCoord: (coord, perDimensionSteps: number[]) => ({ x: coord.x+perDimensionSteps[0], y: coord.y+perDimensionSteps[1], z: coord.z+perDimensionSteps[2], w: coord.w+perDimensionSteps[3] }),
             createNew: (activeCubes => new D17_4DMatrix(activeCubes))
-        });
+        }, activeCubes);
     }
 }
 
@@ -143,82 +144,3 @@ export class PocketDimension {
         return this.matrix.activeCubesCount();
     }
 }
-//
-// type D17_4DCoord = {x:number,y:number,z:number,w:number};
-// export class Pocket4Dimension {
-//     private activeCubes = new Map<string, D17_4DCoord>();
-//     constructor() {
-//     }
-//
-//     initializeWith2D(rawStr: string) {
-//         rawStr.split("\n").forEach((line, y) => {
-//             (line.split("") as D17VisibleCubeState[]).forEach((cell, x) => {
-//                 if(cell === "#") {
-//                     Pocket4Dimension.setState(this.activeCubes, {x,y,z:0,w:0}, "active");
-//                 }
-//             })
-//         })
-//     }
-//
-//     performNewCycle() {
-//         const buildingMap = new Map(this.activeCubes);
-//
-//         const { neighborCoords, uniqueNeighbors } = Pocket4Dimension.buildNeighborCoordsAround(this.activeCubes);
-//
-//         // Active => Inactive state
-//         neighborCoords.forEach((entry, activeCoord) => {
-//             const activeNeighbors = entry.neighbors.filter(coord => this.activeCubes.has(Pocket4Dimension.coordToMapKey(coord))).length;
-//             if(activeNeighbors!==2 && activeNeighbors!==3) {
-//                 Pocket4Dimension.setState(buildingMap, entry.coord, "inactive");
-//             }
-//         })
-//         // Inactive => Active state
-//         uniqueNeighbors.forEach((neighborEntry, neighborKey) => {
-//             const activeNeighborsAround = neighborEntry.activeNeighbors.length;
-//             if(activeNeighborsAround === 3) {
-//                 Pocket4Dimension.setState(buildingMap, neighborEntry.coord, "active");
-//             }
-//         })
-//
-//         this.activeCubes = buildingMap;
-//     }
-//
-//     activeCubesCount() {
-//         return this.activeCubes.size;
-//     }
-//
-//     static buildNeighborCoordsAround(activeCubes: Map<string, D17_4DCoord>) {
-//         const neighborCoords = new Map<string, {coord: D17_4DCoord, neighbors: D17_4DCoord[]}>();
-//         const uniqueNeighbors = new Map<string, { coord: D17_4DCoord, activeNeighbors: D17_4DCoord[]}>();
-//         activeCubes.forEach((activeCoord, activeCoordKey) => {
-//             const currentActiveCoordNeighbors = [] as D17_4DCoord[];
-//             cartesian([-1,0,1],[-1,0,1],[-1,0,1], [-1,0,1]).map(([xStep,yStep,zStep,wStep]) => {
-//                 if(xStep!==0 || yStep!==0 || zStep!==0 || wStep!==0) {
-//                     let neighborCoord = { x: activeCoord.x+xStep, y: activeCoord.y+yStep, z: activeCoord.z+zStep, w: activeCoord.w+wStep };
-//                     currentActiveCoordNeighbors.push(neighborCoord);
-//
-//                     let neighborCoordKey = Pocket4Dimension.coordToMapKey(neighborCoord);
-//                     const uniqueNeighborEntry = (uniqueNeighbors.get(neighborCoordKey) || { coord: neighborCoord, activeNeighbors: [] }) as {coord: D17_4DCoord, activeNeighbors: D17_4DCoord[]};
-//                     uniqueNeighborEntry.activeNeighbors.push(activeCoord);
-//                     uniqueNeighbors.set(neighborCoordKey, uniqueNeighborEntry);
-//                 }
-//             })
-//             neighborCoords.set(activeCoordKey, { coord: activeCoord, neighbors: currentActiveCoordNeighbors });
-//         });
-//         return { neighborCoords, uniqueNeighbors };
-//     }
-//
-//     static setState(activeCubesMap: Map<string, D17_4DCoord>, coord: D17_4DCoord, cubeState: D17CubeState) {
-//         if(cubeState==="active") {
-//             activeCubesMap.set(Pocket4Dimension.coordToMapKey(coord), coord);
-//         } else if(cubeState==="inactive") {
-//             activeCubesMap.delete(Pocket4Dimension.coordToMapKey(coord));
-//         } else {
-//             throw new Error(`Unexpected cube state ; ${cubeState}`);
-//         }
-//     }
-//
-//     static coordToMapKey(coord: D17_4DCoord) {
-//         return `${coord.x}_${coord.y}_${coord.z}_${coord.w}`;
-//     }
-// }
