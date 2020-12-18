@@ -3,10 +3,10 @@ import {D18_INPUT} from "./2020-18.inputs";
 
 
 test("Q1 samples", () => {
-    expect(D18Maths.parseAndEvaluate("2 * 3 + (4 * 5)")).toEqual(26);
-    expect(D18Maths.parseAndEvaluate("5 + (8 * 3 + 9 + 3 * 4 * 3)")).toEqual(437);
-    expect(D18Maths.parseAndEvaluate("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))")).toEqual(12240);
-    expect(D18Maths.parseAndEvaluate("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2")).toEqual(13632);
+    expect(D18Maths.parseAndEvaluateLeftToRight("2 * 3 + (4 * 5)")).toEqual(26);
+    expect(D18Maths.parseAndEvaluateLeftToRight("5 + (8 * 3 + 9 + 3 * 4 * 3)")).toEqual(437);
+    expect(D18Maths.parseAndEvaluateLeftToRight("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))")).toEqual(12240);
+    expect(D18Maths.parseAndEvaluateLeftToRight("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2")).toEqual(13632);
 })
 
 test("Q1", () => {
@@ -22,13 +22,13 @@ test("addParenthesisForPlusPrecedence() on samples", () => {
 })
 
 test("Q2 samples", () => {
-    expect(D18Maths.parseAndEvaluate2("1 + (2 * 3) + (4 * (5 + 6))")).toEqual(51);
-    expect(D18Maths.parseAndEvaluate2("2 * 3 + (4 * 5)")).toEqual(46);
-    expect(D18Maths.parseAndEvaluate2("5 + (8 * 3 + 9 + 3 * 4 * 3)")).toEqual(1445);
-    expect(D18Maths.parseAndEvaluate2("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))")).toEqual(669060);
-    expect(D18Maths.parseAndEvaluate2("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2")).toEqual(23340);
+    expect(D18Maths.parseAndEvaluateWithPlusPrecedence("1 + (2 * 3) + (4 * (5 + 6))")).toEqual(51);
+    expect(D18Maths.parseAndEvaluateWithPlusPrecedence("2 * 3 + (4 * 5)")).toEqual(46);
+    expect(D18Maths.parseAndEvaluateWithPlusPrecedence("5 + (8 * 3 + 9 + 3 * 4 * 3)")).toEqual(1445);
+    expect(D18Maths.parseAndEvaluateWithPlusPrecedence("5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))")).toEqual(669060);
+    expect(D18Maths.parseAndEvaluateWithPlusPrecedence("((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2")).toEqual(23340);
 })
 
 test("Q2", () => {
-    expect(D18Maths.sumAll(D18_INPUT, D18Maths.parseAndEvaluate2)).toEqual(169899524778212);
+    expect(D18Maths.sumAll(D18_INPUT, D18Maths.parseAndEvaluateWithPlusPrecedence)).toEqual(169899524778212);
 })

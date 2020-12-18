@@ -1,13 +1,14 @@
+import {extractColumnBasedValues, rotateMatrix} from "./utils";
 
 
 type Operator = "+"|"*";
 
 export class D18Maths {
-    public static sumAll(str: string, parseAndEvaluator: (line: string) => number = D18Maths.parseAndEvaluate) {
+    public static sumAll(str: string, parseAndEvaluator: (line: string) => number = D18Maths.parseAndEvaluateLeftToRight) {
         return str.split("\n").reduce((result, line) => result + parseAndEvaluator(line), 0);
     }
 
-    public static parseAndEvaluate(line: string): number {
+    public static parseAndEvaluateLeftToRight(line: string): number {
         let operatorsAndOperands = D18Maths.extractOperatorsAndOperandsFrom(line);
         return D18Maths.evaluate(operatorsAndOperands);
     }
@@ -101,9 +102,17 @@ export class D18Maths {
         return operatorsAndOperands;
     }
 
-    public static parseAndEvaluate2(str: string): number {
+    public static parseAndEvaluateWithPlusPrecedence(str: string): number {
         return D18Maths.evaluate(D18Maths.addParenthesisForPlusPrecedence(str));
     }
+}
 
+function PARSE_AND_EVALUATE_WITH_LEFT_TO_RIGHT(expressionsCells: GSheetCells) {
+    const [ expressions ] = extractColumnBasedValues<string>(expressionsCells);
+    return rotateMatrix([ expressions.map(D18Maths.parseAndEvaluateLeftToRight) ]);
+}
 
+function PARSE_AND_EVALUATE_WITH_PLUS_PRECEDENCE(expressionsCells: GSheetCells) {
+    const [ expressions ] = extractColumnBasedValues<string>(expressionsCells);
+    return rotateMatrix([ expressions.map(str => D18Maths.addParenthesisForPlusPrecedence(str).join("")), expressions.map(D18Maths.parseAndEvaluateWithPlusPrecedence) ] as any[]);
 }
