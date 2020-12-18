@@ -1,4 +1,4 @@
-import {cartesian, reduceRange, reduceTimes} from "./utils";
+import {cartesian, extractColumnBasedValues, reduceTimes} from "./utils";
 
 
 type D17CubeState = "active"|"inactive";
@@ -114,11 +114,12 @@ export class PocketDimension {
     constructor(private matrix: D17Matrix<any>) {
     }
 
-    initializeWith2D(rawStr: string) {
+    initializeWith2D(rawStr: string): this {
         this.matrix.initializeWith2D(rawStr);
+        return this;
     }
 
-    performNewCycle() {
+    performNewCycle(): this {
         const { neighborCoords, uniqueNeighbors } = this.matrix.buildNeighborCoordsAround();
 
         const buildingMatrix = this.matrix.clone();
@@ -138,9 +139,31 @@ export class PocketDimension {
         })
 
         this.matrix = buildingMatrix;
+        return this;
+    }
+
+    performCycles(numberOfCycles: number): this {
+        for(var i=0; i<numberOfCycles; i++) {
+            this.performNewCycle();
+        }
+        return this;
     }
 
     activeCubesCount() {
         return this.matrix.activeCubesCount();
     }
+}
+
+function COUNT_ACTIVE_CUBES_COUNTS_3D(cells: GSheetCells, cycles: number) {
+    return new PocketDimension(new D17_3DMatrix())
+        .initializeWith2D(extractColumnBasedValues<string>(cells)[0].join("\n"))
+        .performCycles(cycles)
+        .activeCubesCount();
+}
+
+function COUNT_ACTIVE_CUBES_COUNTS_4D(cells: GSheetCells, cycles: number) {
+    return new PocketDimension(new D17_4DMatrix())
+        .initializeWith2D(extractColumnBasedValues<string>(cells)[0].join("\n"))
+        .performCycles(cycles)
+        .activeCubesCount();
 }
