@@ -48,61 +48,52 @@ export class D18Maths {
         return line.replace(/\(/g, "( ").replace(/\)/g, " )").split(" ");
     }
 
+    private static findAdditionnalParenthesisIndex(operatorsAndOperands: string[], startingIndex: number, opts: {
+        step: number,
+        incrementIntermediateParenthesisOn: "("|")",
+        decrementIntermediateParenthesisOn: "("|")",
+    }): number {
+        let indexCandidate = startingIndex + opts.step, additionnalParenthesisInsertionIndex = undefined, intermediateParenthesisCount = 0;
+        while(additionnalParenthesisInsertionIndex === undefined && indexCandidate >= 0 && indexCandidate < operatorsAndOperands.length) {
+            let value = operatorsAndOperands[indexCandidate];
+            if(value === opts.incrementIntermediateParenthesisOn) {
+                intermediateParenthesisCount++;
+            } else if(value === opts.decrementIntermediateParenthesisOn) {
+                intermediateParenthesisCount--;
+                if(intermediateParenthesisCount === 0) {
+                    additionnalParenthesisInsertionIndex = indexCandidate;
+                }
+            } else if(["*","+"].includes(value)) {
+                // Do nothing
+            } else { // We're on a number
+                if(intermediateParenthesisCount === 0) {
+                    additionnalParenthesisInsertionIndex = indexCandidate;
+                }
+            }
+            indexCandidate += opts.step;
+        }
+        if(additionnalParenthesisInsertionIndex === undefined) {
+            additionnalParenthesisInsertionIndex = indexCandidate - opts.step;
+        }
+
+        return additionnalParenthesisInsertionIndex;
+    }
+
     public static addParenthesisForPlusPrecedence(line: string): string[] {
         let operatorsAndOperands = D18Maths.extractOperatorsAndOperandsFrom(line);
-        for(var i=0; i<operatorsAndOperands.length; i++) {
+        for(let i=0; i<operatorsAndOperands.length; i++) {
             if(operatorsAndOperands[i] === "+") {
                 // Trying to locate previous index where to insert a "("
-                let startParenthesisInsertionIndexCandidate = i-1, startParenthesisInsertionIndex = undefined, endParenthesisCount = 0;
-                while(startParenthesisInsertionIndex === undefined && startParenthesisInsertionIndexCandidate >= 0) {
-                    let value = operatorsAndOperands[startParenthesisInsertionIndexCandidate];
-                    if(value === ")") {
-                        endParenthesisCount++;
-                    } else if(value === "(") {
-                        endParenthesisCount--;
-                        if(endParenthesisCount === 0) {
-                            startParenthesisInsertionIndex = startParenthesisInsertionIndexCandidate;
-                        }
-                    } else if(["*","+"].includes(value)) {
-                        // Do nothing
-                    } else { // We're on a number
-                        if(endParenthesisCount === 0) {
-                            startParenthesisInsertionIndex = startParenthesisInsertionIndexCandidate;
-                        }
-                    }
-                    startParenthesisInsertionIndexCandidate--;
-                }
-                if(startParenthesisInsertionIndex === undefined) {
-                    startParenthesisInsertionIndex = 0;
-                }
-
+                const startParenthesisInsertionIndex = D18Maths.findAdditionnalParenthesisIndex(operatorsAndOperands, i, {
+                    step: -1, incrementIntermediateParenthesisOn: ")", decrementIntermediateParenthesisOn: "("
+                });
                 operatorsAndOperands.splice(startParenthesisInsertionIndex, 0, "(");
                 i++;
 
                 // Same than previously, but to locate next index where to insert a ")"
-                let endParenthesisInsertionIndexCandidate = i+1, endParenthesisInsertionIndex = undefined, startParenthesisCount = 0;
-                while(endParenthesisInsertionIndex === undefined && endParenthesisInsertionIndexCandidate < operatorsAndOperands.length) {
-                    let value = operatorsAndOperands[endParenthesisInsertionIndexCandidate];
-                    if(value === "(") {
-                        startParenthesisCount++;
-                    } else if(value === ")") {
-                        startParenthesisCount--;
-                        if(startParenthesisCount === 0) {
-                            endParenthesisInsertionIndex = endParenthesisInsertionIndexCandidate;
-                        }
-                    } else if(["*","+"].includes(value)) {
-                        // Do nothing
-                    } else { // We're on a number
-                        if(startParenthesisCount === 0) {
-                            endParenthesisInsertionIndex = endParenthesisInsertionIndexCandidate;
-                        }
-                    }
-                    endParenthesisInsertionIndexCandidate++;
-                }
-                if(endParenthesisInsertionIndex === undefined) {
-                    endParenthesisInsertionIndex = operatorsAndOperands.length-1;
-                }
-
+                const endParenthesisInsertionIndex = D18Maths.findAdditionnalParenthesisIndex(operatorsAndOperands, i, {
+                    step: 1, incrementIntermediateParenthesisOn: "(", decrementIntermediateParenthesisOn: ")"
+                });
                 operatorsAndOperands.splice(endParenthesisInsertionIndex+1, 0, ")");
                 i++;
             }
