@@ -70,6 +70,63 @@ export class D20Tile {
         return new D20Tile(tileId, lines.map((row, y) => row.split("").map((cell, x) => ({x,y, v: cell as D20TileValue}))).flat());
     }
 
+    public rotateClockwise(): D20Tile {
+        return this.flipMajorDiagonal().flipY();
+    }
+
+    public flipX() {
+        const flippedEntries = [] as D20TileEntry[];
+        for(let x=0; x<this.size; x++) {
+            for(let y=0; y<this.size; y++) {
+                let originalTileEntry = this.entryAt({x,y});
+                flippedEntries.push({ x: x, y: this.size - y - 1, v: originalTileEntry!.v });
+            }
+        }
+        return new D20Tile(this.id, flippedEntries);
+    }
+
+    public flipY() {
+        const flippedEntries = [] as D20TileEntry[];
+        for(let x=0; x<this.size; x++) {
+            for(let y=0; y<this.size; y++) {
+                let originalTileEntry = this.entryAt({x,y});
+                flippedEntries.push({ x: this.size - x - 1, y: y, v: originalTileEntry!.v });
+            }
+        }
+        return new D20Tile(this.id, flippedEntries);
+    }
+
+    public flipXY() {
+        return this.flipX().flipY();
+    }
+
+    public flipMajorDiagonal() {
+        const flippedEntries = [] as D20TileEntry[];
+        for(let x=0; x<this.size; x++) {
+            for(let y=0; y<this.size; y++) {
+                let originalTileEntry = this.entryAt({x,y});
+                flippedEntries.push({ x: y, y: x, v: originalTileEntry!.v });
+            }
+        }
+        return new D20Tile(this.id, flippedEntries);
+    }
+
+    public entryAt({x,y}: {x:number, y:number}): D20TileEntry|undefined {
+        return this.valByCoord.get(D20Tile.coordsToKey({x,y}));
+    }
+
+    public toString() {
+        let str = "";
+        for(var y=0; y<this.size; y++) {
+            for(var x=0; x<this.size; x++) {
+                let en = this.entryAt({x,y});
+                str += en===undefined?"?":en.v;
+            }
+            str+="\n";
+        }
+        return str.trimEnd();
+    }
+
     public static coordsToKey({x,y}: {x: number, y: number}) {
         return `${x}_${y}`;
     }

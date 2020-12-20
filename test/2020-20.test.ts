@@ -12,3 +12,44 @@ test("Q1 INPUT", () => {
 
     expect(d20Puzzle.computeBorderTilesMultiplication()).toEqual(28057939502729);
 })
+
+test("Matrix manipulation test", () => {
+    let tile = D20Tile.createFrom(`
+Tile 42:
+..##.
+##..#
+#...#
+####.
+##.##
+    `.trim());
+
+    expect(tile.rotateClockwise().toString()).toEqual(`
+####.
+##.#.
+.#..#
+##..#
+#.##.
+    `.trim())
+
+    expect(tile.flipY().toString()).toEqual(`
+.##..
+#..##
+#...#
+.####
+##.##
+    `.trim())
+    expect(tile.flipX().toString()).toEqual(`
+##.##
+####.
+#...#
+##..#
+..##.
+    `.trim())
+    expect(tile.flipXY().toString()).toEqual(`
+##.##
+.####
+#...#
+#..##
+.##..
+    `.trim())
+})
