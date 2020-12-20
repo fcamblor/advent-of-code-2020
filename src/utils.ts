@@ -185,6 +185,50 @@ export function cartesian(...arrays: any[][]): any[][] {
     }, [ [] ]);
 }
 
+export function fill2DMatrix<T>(startingMatrix: Map<string, {x:number,y:number,v:T}>, matrixToConcat: Map<string, {x:number,y:number,v:T}>, atOffset: {x:number,y:number}): void {
+    Array.from(matrixToConcat.values()).reduce((newMatrix, value) => {
+        newMatrix.set(`${atOffset.x + value.x}_${atOffset.y + value.y}`, { x: atOffset.x + value.x, y: atOffset.y + value.y, v: value.v });
+        return newMatrix;
+    }, startingMatrix);
+}
+
+export function fillAroundMatrix<T>(matrix: Map<String, {x:number,y:number,v:T}>, fillingValue: T): void {
+    const maxY = Math.max(...Array.from(matrix.values()).map(c => c.y))+1;
+    const maxX = Math.max(...Array.from(matrix.values()).map(c => c.x))+1;
+
+    Array.from(matrix.entries()).forEach(([key, value]) => {
+        if(value.x === 0 || value.y === 0) {
+            matrix.delete(key);
+        }
+        matrix.set(`${value.x+1}_${value.y+1}`, {x: value.x+1, y: value.y+1, v: value.v});
+    });
+    for(let x=0; x<maxX+2; x++) {
+        matrix.set(`${x}_0`, { x, y:0, v: fillingValue});
+        matrix.set(`${x}_${maxY+1}`, { x, y:maxY+1, v: fillingValue});
+    }
+    for(let y=0; y<maxY+2; y++) {
+        matrix.set(`0_${y}`, { x:0, y, v: fillingValue});
+        matrix.set(`${maxX+1}_${y}`, { x:maxX+1, y, v: fillingValue});
+    }
+}
+
+export function printMatrix<T>(matr: Map<string, {x:number,y:number,v:T}>): string {
+    let str = "";
+    const maxY = Math.max(...Array.from(matr.values()).map(c => c.y));
+    const maxX = Math.max(...Array.from(matr.values()).map(c => c.x));
+
+    for(let y=0; y<maxY; y++){
+        for(let x=0; x<maxX; x++){
+            let cell = matr.get(`${x}_${y}`);
+            str += cell===undefined?"?":cell.v;
+        }
+        str+="\n";
+    }
+
+    console.log(str.substr(0, str.length-1));
+    return str;
+}
+
 export function mapCreateIfAbsent<K,T>(map: Map<K,T>, key: K, initValue: T): T {
     if(!map.has(key)) {
         map.set(key, initValue);

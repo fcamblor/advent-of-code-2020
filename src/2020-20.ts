@@ -1,4 +1,12 @@
-import {bitsToNumber, cartesian, findMapped, mapCreateIfAbsent, reduceTimes} from "./utils";
+import {
+    bitsToNumber,
+    cartesian,
+    fill2DMatrix, fillAroundMatrix,
+    findMapped,
+    mapCreateIfAbsent, printMatrix,
+    reduceRange,
+    reduceTimes
+} from "./utils";
 
 
 type D20TileValue = "#"|"."
@@ -6,8 +14,8 @@ type D20TileEntry = {x:number, y:number, v: D20TileValue};
 type D20ChecksumConstraint = { north?: number[]|undefined, south?: number[]|undefined, west?: number[]|undefined, east?: number[]|undefined };
 
 export class D20Tile {
-    private readonly size: number;
-    private readonly valByCoord: Map<string, D20TileEntry>;
+    public readonly size: number;
+    public readonly valByCoord: Map<string, D20TileEntry>;
     public readonly checksums: {
         firstRow: number,
         lastRow: number,
@@ -19,7 +27,7 @@ export class D20Tile {
         lastColReversed: number,
     };
 
-    constructor(public readonly id: number, private readonly originalValues: D20TileEntry[]) {
+    constructor(public readonly id: number, public readonly originalValues: D20TileEntry[]) {
         this.valByCoord = originalValues.reduce((valByCoord, val) => {
             valByCoord.set(D20Tile.coordsToKey(val), val);
             return valByCoord;
@@ -171,16 +179,21 @@ export class D20Tile {
         return { matches: true, suggestedTransformationsToMatch: suggestedTransformationsToMatch };
     }
 
-    public toString() {
-        let str = "";
+    public toDisplayableMatrix(): string[][] {
+        const result = [] as string[][];
         for(var y=0; y<this.size; y++) {
+            const row = [] as string[];
             for(var x=0; x<this.size; x++) {
                 let en = this.entryAt({x,y});
-                str += en===undefined?"?":en.v;
+                row.push(en===undefined?"?":en.v);
             }
-            str+="\n";
+            result.push(row);
         }
-        return str.trimEnd();
+        return result;
+    }
+
+    public toString() {
+        return this.toDisplayableMatrix().map(row => row.join("")).join("\n");
     }
 
     public static coordsToKey({x,y}: {x: number, y: number}) {
@@ -265,7 +278,6 @@ export class D20Puzzle {
     }
 
     public solvePuzzle(): SolvedPuzzle {
-        const coordinatedTiles = [] as CoordinatedTile[];
         let borderTiles = this.findBorderTiles();
 
         // Let's make some choices for corner tiles as we have a lot of possibilities dependending on flips/rotates
@@ -296,7 +308,7 @@ export class D20Puzzle {
         console.log(northWestTile.toString());
 
         // Building first row
-        const { firstRowTiles, ..._ } = reduceTimes(this.size - 1, ({ firstRowTiles, lastTile}, loopIndex, loopInfos) => {
+        const { coordinatedTiles: firstRowTiles, ..._ } = reduceTimes(this.size - 1, ({ coordinatedTiles, lastTile}, loopIndex, loopInfos) => {
             const lastTileEastChecksum = lastTile.checksums.lastCol;
             const foundMatchingTilesChecksum = this.tilesPerChecksum.get(lastTileEastChecksum)!.filter(ce => ce.tile.id !== lastTile.id)!;
             if(foundMatchingTilesChecksum.length > 1) {
@@ -317,11 +329,10 @@ export class D20Puzzle {
                 })!;
             }
 
-            firstRowTiles.push(transformedMatchingTile);
+            coordinatedTiles.set(D20Puzzle.coordsToKey({x: loopIndex+1, y:0}), { y:0, x: loopIndex+1, tile: transformedMatchingTile });
 
-            return { firstRowTiles, lastTile: transformedMatchingTile};
-        }, { firstRowTiles: [ northWestTile ], lastTile: northWestTile });
-
+            return { coordinatedTiles, lastTile: transformedMatchingTile};
+        }, { coordinatedTiles: new Map([ [ D20Puzzle.coordsToKey({x:0,y:0}) , { x:0, y:0, tile: northWestTile } ] ]), lastTile: northWestTile } as { coordinatedTiles: Map<string, CoordinatedTile>, lastTile: D20Tile });
 
 
         return new SolvedPuzzle(coordinatedTiles);
@@ -338,10 +349,43 @@ export class D20Puzzle {
         const tiles = str.split("\n\n").map(D20Tile.createFrom);
         return new D20Puzzle(tiles);
     }
+
+    public static coordsToKey({x,y}: {x: number, y: number}) {
+        return `${x}_${y}`;
+    }
+
+    public static printCoordinatedTiles(coordinatedTiles: Map<string, CoordinatedTile>, tileSize: number) {
+        const maxY = Math.max(...Array.from(coordinatedTiles.values()).map(t => t.y));
+        const maxX = Math.max(...Array.from(coordinatedTiles.values()).map(t => t.x));
+
+        const matrixToPrint = new Map<string, {x:number,y:number,v:string}>();
+
+        for(let y=0; y<=maxY; y++) {
+            for(let x=0; x<=maxX; x++) {
+                let matrix: Map<string, {x:number,y:number,v:string}>;
+                if(coordinatedTiles.has(D20Puzzle.coordsToKey({x,y}))) {
+                    matrix = coordinatedTiles.get(D20Puzzle.coordsToKey({x,y}))!.tile.valByCoord;
+                } else {
+                    matrix = new Array(tileSize).fill("").reduce((map, _, y) => {
+                        return new Array(tileSize).fill( "").reduce((map, _, x) => {
+                            map.set(`${x}_${y}`, {x,y,v:" "});
+                            return map;
+                        }, map)
+                    }, new Map<string, {x:number,y:number,v:string}>());
+                }
+
+                fillAroundMatrix(matrix, " ");
+                fill2DMatrix(matrixToPrint, matrix, {x:x*(tileSize+2), y:y*(tileSize+2)});
+            }
+        }
+
+        printMatrix(matrixToPrint);
+    }
+
 }
 
 type CoordinatedTile = { tile: D20Tile, x: number, y: number };
 export class SolvedPuzzle {
-    constructor(public readonly tiles: CoordinatedTile[]) {
+    constructor(public readonly tiles: Map<string, CoordinatedTile>) {
     }
 }
