@@ -153,8 +153,7 @@ export function reduceRange<T>(start: number, endIncluded: number, reducer: (acc
 }
 
 export function bitsToNumber(bits: ("0"|"1")[]): number {
-    // TODO: to optimize with bit shifts
-    return bits.reverse().reduce((sum, val, idx) => sum + (val==="0"?0:Math.pow(2, idx)), 0);
+    return parseInt(bits.join(""), 2);
 }
 export function numberToBits(num: number): ("0"|"1")[] {
     return (num >>> 0).toString(2).split("") as ("0"|"1")[];
@@ -184,4 +183,11 @@ export function cartesian(...arrays: any[][]): any[][] {
             []
         )
     }, [ [] ]);
+}
+
+export function mapCreateIfAbsent<K,T>(map: Map<K,T>, key: K, initValue: T): T {
+    if(!map.has(key)) {
+        map.set(key, initValue);
+    }
+    return map.get(key)!;
 }
