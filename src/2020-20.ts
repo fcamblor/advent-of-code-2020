@@ -78,6 +78,10 @@ export class D20Tile {
         return new D20Tile(this.id, this.squarredMatrix.flipMajorDiagonal());
     }
 
+    public subtractBorders() {
+        return new D20Tile(this.id, this.squarredMatrix.subtractBorders());
+    }
+
     public entryAt({x,y}: {x:number, y:number}): D20TileEntry|undefined {
         return this.squarredMatrix.entryAt({x,y});
     }
@@ -255,7 +259,7 @@ export class D20Puzzle {
         };
     }
 
-    public solvePuzzle(): SolvedPuzzle {
+    public solvePuzzle(): D20SolvedPuzzle {
         let borderTiles = this.findBorderTiles();
 
         // Let's make some choices for corner tiles as we have a lot of possibilities dependending on flips/rotates
@@ -332,7 +336,14 @@ export class D20Puzzle {
             return { coordinatedTiles };
         }, { coordinatedTiles: buildingCoordinatedTiles })
 
-        return new SolvedPuzzle(coordinatedTiles);
+
+        const subtractedTiles = Array.from(coordinatedTiles.entries()).reduce((subtractedTiles, [key, coordinatedTile]) => {
+            subtractedTiles.set(key, {...coordinatedTile, tile: coordinatedTile.tile.subtractBorders()});
+            return subtractedTiles;
+        }, new Map<string, CoordinatedTile>());
+
+        D20Puzzle.printCoordinatedTiles(subtractedTiles, Array.from(subtractedTiles.values())[0].tile.squarredMatrix.size);
+        return new D20SolvedPuzzle(subtractedTiles);
     }
 
     public computeBorderTilesMultiplication() {
@@ -382,7 +393,104 @@ export class D20Puzzle {
 }
 
 type CoordinatedTile = { tile: D20Tile, x: number, y: number };
-export class SolvedPuzzle {
-    constructor(public readonly tiles: Map<string, CoordinatedTile>) {
+export class D20SolvedPuzzle {
+    static readonly MONSTER_REGEX = /([\.#]{18})#([\.#].{5})#([\.#]{4})##([\.#]{4})##([\.#]{4})###(.{5}[\.#])#([\.#]{2})#([\.#]{2})#([\.#]{2})#([\.#]{2})#([\.#]{2})#([\.#]{3})/gs;
+    static readonly MONSTER_REGEX_REPLACEMENT = "$1O$2O$3OO$4OO$5OOO$6O$7O$8O$9O$10O$11O$12";
+
+    static readonly TRANSFORMATIONS_TO_APPLY_TO_FIND_MONSTER: ( (matrix: Squarred2DMatrix<string>) => Squarred2DMatrix<string> )[] = [
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.flipX(),
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.flipX().flipY(), // Re-flippingX reinitializes state
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.flipX(),
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.rotateClockwise(),
+        (matrix) => matrix.rotateClockwise(),
+    ];
+
+    private printableTiles: Squarred2DMatrix<string>;
+    constructor(private readonly tiles: Map<string, CoordinatedTile>) {
+        this.printableTiles = new Squarred2DMatrix<string>(D20SolvedPuzzle.toPrintableMatrix(this.tiles));
+    }
+
+    public rotateAndFlipUntilFindingAMonster() {
+        let candidatePrintableTiles = this.printableTiles;
+        let i=0;
+        while(!D20SolvedPuzzle.monsterFound(candidatePrintableTiles) && i<D20SolvedPuzzle.TRANSFORMATIONS_TO_APPLY_TO_FIND_MONSTER.length) {
+            candidatePrintableTiles = D20SolvedPuzzle.TRANSFORMATIONS_TO_APPLY_TO_FIND_MONSTER[i](candidatePrintableTiles);
+            i++;
+        }
+        if(!D20SolvedPuzzle.monsterFound(candidatePrintableTiles)) {
+            throw new Error(`I guess there is a problem ... we were not able to find any monster !`);
+        }
+
+        this.printableTiles = candidatePrintableTiles;
+        return this;
+    }
+
+    public fillMonstersThenCountX() {
+
+        let str = this.printableTiles.print();
+        while(str.match(D20SolvedPuzzle.MONSTER_REGEX)) {
+            str = str.replace(D20SolvedPuzzle.MONSTER_REGEX, D20SolvedPuzzle.MONSTER_REGEX_REPLACEMENT);
+        }
+
+        console.log(str);
+
+        return countLetterOccurencesInString("#", str);
+    }
+
+    public static monsterFound(printableTiles: Squarred2DMatrix<string>): boolean {
+        const str = printableTiles.print();
+        const firstFoundCoords = D20SolvedPuzzle.findMonsterStartingAt(0, str);
+        return firstFoundCoords !== undefined;
+    }
+
+    public static findMonsterStartingAt(index: number, str: string) {
+        return !!str.substr(index).match(D20SolvedPuzzle.MONSTER_REGEX);
+    }
+
+    public static toPrintableMatrix(coordinatedTiles: Map<string, CoordinatedTile>) {
+        const maxTileY = Math.max(...Array.from(coordinatedTiles.values()).map(t => t.y)) + 1;
+        const maxTileX = Math.max(...Array.from(coordinatedTiles.values()).map(t => t.x)) + 1;
+
+        if(maxTileX !== maxTileY) {
+            throw new Error(`Unexpected sizes : ${maxTileX} !== ${maxTileY}`);
+        }
+
+        const tilesSize = maxTileX;
+
+        const maxX = Math.max(...Array.from(coordinatedTiles.values())[0].tile.squarredMatrix.values.map(t => t.x)) + 1;
+        const maxY = Math.max(...Array.from(coordinatedTiles.values())[0].tile.squarredMatrix.values.map(t => t.y)) + 1;
+
+        if(maxX !== maxY) {
+            throw new Error(`Unexpected sizes : ${maxX} !== ${maxY}`);
+        }
+
+        const size = maxX;
+
+        const matrixToPrint = [] as Squarred2DMatrixEntry<string>[];
+
+        for(let tileY=0; tileY<tilesSize; tileY++) {
+            for(let tileX=0; tileX<tilesSize; tileX++) {
+                let tileMatrix = coordinatedTiles.get(D20Puzzle.coordsToKey({x: tileX,y: tileY}))!.tile.squarredMatrix.values;
+                tileMatrix.reduce((overallMatrix, entry) => {
+                    overallMatrix.push({ x:tileX*size + entry.x, y:tileY*size + entry.y, v: entry.v  });
+                    return overallMatrix;
+                }, matrixToPrint);
+            }
+        }
+
+        return matrixToPrint;
     }
 }
