@@ -214,8 +214,8 @@ export function fillAroundMatrix<T>(matrix: Map<String, {x:number,y:number,v:T}>
 
 export function printMatrix<T>(matr: Map<string, {x:number,y:number,v:T}>): string {
     let str = "";
-    const maxY = Math.max(...Array.from(matr.values()).map(c => c.y));
-    const maxX = Math.max(...Array.from(matr.values()).map(c => c.x));
+    const maxY = Math.max(...Array.from(matr.values()).map(c => c.y)) + 1;
+    const maxX = Math.max(...Array.from(matr.values()).map(c => c.x)) + 1;
 
     for(let y=0; y<maxY; y++){
         for(let x=0; x<maxX; x++){

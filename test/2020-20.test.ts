@@ -24,6 +24,7 @@ Tile 42:
     `.trim());
 
     expect(tile.rotateClockwise().toString()).toEqual(`
+tile=42
 ####.
 ##.#.
 .#..#
@@ -32,6 +33,7 @@ Tile 42:
     `.trim())
 
     expect(tile.flipY().toString()).toEqual(`
+tile=42
 .##..
 #..##
 #...#
@@ -39,6 +41,7 @@ Tile 42:
 ##.##
     `.trim())
     expect(tile.flipX().toString()).toEqual(`
+tile=42
 ##.##
 ####.
 #...#
@@ -46,6 +49,7 @@ Tile 42:
 ..##.
     `.trim())
     expect(tile.flipXY().toString()).toEqual(`
+tile=42
 ##.##
 .####
 #...#
