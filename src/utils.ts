@@ -245,3 +245,93 @@ export function findMapped<T,U>(arr: T[], mapper: (value: T, index: number) => U
     }
     return undefined;
 }
+
+export type Squarred2DMatrixEntry<T> = {x:number,y:number,v:T};
+export class Squarred2DMatrix<T> {
+    public readonly size: number;
+    public readonly valByCoord: Map<string, Squarred2DMatrixEntry<T>>;
+    constructor(public readonly values: Squarred2DMatrixEntry<T>[]) {
+        this.valByCoord = values.reduce((valByCoord, val) => {
+            valByCoord.set(Squarred2DMatrix.coordsToKey(val), val);
+            return valByCoord;
+        }, new Map<string, Squarred2DMatrixEntry<T>>());
+
+        const maxX = Math.max(...this.values.map(({x, ..._}) => x));
+        const maxY = Math.max(...this.values.map(({y, ..._}) => y));
+        if(maxX !== maxY) {
+            throw new Error(`Unexpected matrix values : this is not a square ! maxX=${maxX}, maxY=${maxY}`);
+        }
+        this.size = maxX + 1;
+    }
+
+    public extractRow(rowNum: number) {
+        return this.values.filter(({y, ..._}) => y === rowNum).sort((e1, e2) => e1.x - e2.x);
+    }
+    public extractCol(colNum: number) {
+        return this.values.filter(({x, ..._}) => x === colNum).sort((e1, e2) => e1.y - e2.y);
+    }
+
+    public rotateClockwise() {
+        return this.flipMajorDiagonal().flipY();
+    }
+
+    public flipX() {
+        const flippedEntries = [] as Squarred2DMatrixEntry<T>[];
+        for(let x=0; x<this.size; x++) {
+            for(let y=0; y<this.size; y++) {
+                let originalTileEntry = this.entryAt({x,y});
+                flippedEntries.push({ x: x, y: this.size - y - 1, v: originalTileEntry!.v });
+            }
+        }
+        return new Squarred2DMatrix<T>(flippedEntries);
+    }
+
+    public flipY() {
+        const flippedEntries = [] as Squarred2DMatrixEntry<T>[];
+        for(let x=0; x<this.size; x++) {
+            for(let y=0; y<this.size; y++) {
+                let originalTileEntry = this.entryAt({x,y});
+                flippedEntries.push({ x: this.size - x - 1, y: y, v: originalTileEntry!.v });
+            }
+        }
+        return new Squarred2DMatrix<T>(flippedEntries);
+    }
+
+    public flipXY() {
+        return this.flipX().flipY();
+    }
+
+    public flipMajorDiagonal() {
+        const flippedEntries = [] as Squarred2DMatrixEntry<T>[];
+        for(let x=0; x<this.size; x++) {
+            for(let y=0; y<this.size; y++) {
+                let originalTileEntry = this.entryAt({x,y});
+                flippedEntries.push({ x: y, y: x, v: originalTileEntry!.v });
+            }
+        }
+        return new Squarred2DMatrix<T>(flippedEntries);
+    }
+
+    public subtractBorders() {
+        const subtractedEntries = [] as Squarred2DMatrixEntry<T>[];
+        for(let x=1; x<this.size-1; x++) {
+            for(let y=1; y<this.size-1; y++) {
+                let originalTileEntry = this.entryAt({x,y});
+                subtractedEntries.push({ x: x-1, y: y-1, v: originalTileEntry!.v });
+            }
+        }
+        return new Squarred2DMatrix(subtractedEntries);
+    }
+
+    public entryAt({x,y}: {x:number, y:number}): Squarred2DMatrixEntry<T>|undefined {
+        return this.valByCoord.get(Squarred2DMatrix.coordsToKey({x,y}));
+    }
+
+    public print() {
+        return printMatrix(this.valByCoord);
+    }
+
+    public static coordsToKey({x,y}: {x: number, y: number}) {
+        return `${x}_${y}`;
+    }
+}

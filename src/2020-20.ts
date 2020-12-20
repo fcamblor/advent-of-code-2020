@@ -1,11 +1,11 @@
 import {
     bitsToNumber,
-    cartesian,
+    cartesian, countLetterOccurencesInString,
     fill2DMatrix, fillAroundMatrix,
     findMapped,
     mapCreateIfAbsent, printMatrix,
     reduceRange,
-    reduceTimes
+    reduceTimes, Squarred2DMatrix, Squarred2DMatrixEntry
 } from "./utils";
 
 
@@ -15,8 +15,6 @@ type D20Checksum = { cs: number, for: string };
 type D20ChecksumConstraint = { north?: number[]|undefined, south?: number[]|undefined, west?: number[]|undefined, east?: number[]|undefined };
 
 export class D20Tile {
-    public readonly size: number;
-    public readonly valByCoord: Map<string, D20TileEntry>;
     public readonly checksums: {
         firstRow: D20Checksum,
         lastRow: D20Checksum,
@@ -28,28 +26,16 @@ export class D20Tile {
         lastColReversed: D20Checksum,
     };
 
-    constructor(public readonly id: number, public readonly originalValues: D20TileEntry[]) {
-        this.valByCoord = originalValues.reduce((valByCoord, val) => {
-            valByCoord.set(D20Tile.coordsToKey(val), val);
-            return valByCoord;
-        }, new Map<string, D20TileEntry>());
-
-        const maxX = Math.max(...this.originalValues.map(({x, ..._}) => x));
-        const maxY = Math.max(...this.originalValues.map(({y, ..._}) => y));
-        if(maxX !== maxY) {
-            throw new Error(`Unexpected tiles values : this is not a square ! maxX=${maxX}, maxY=${maxY}`);
-        }
-        this.size = maxX + 1;
-
+    constructor(public readonly id: number, public readonly squarredMatrix: Squarred2DMatrix<D20TileValue>) {
         this.checksums = {
-            firstRow: D20Tile.checksumFor(this.extractRow(0)),
-            lastRow: D20Tile.checksumFor(this.extractRow(this.size-1)),
-            firstRowReversed: D20Tile.checksumFor(this.extractRow(0).reverse()),
-            lastRowReversed: D20Tile.checksumFor(this.extractRow(this.size-1).reverse()),
-            firstCol: D20Tile.checksumFor(this.extractCol(0)),
-            lastCol: D20Tile.checksumFor(this.extractCol(this.size-1)),
-            firstColReversed: D20Tile.checksumFor(this.extractCol(0).reverse()),
-            lastColReversed: D20Tile.checksumFor(this.extractCol(this.size-1).reverse()),
+            firstRow: D20Tile.checksumFor(this.squarredMatrix.extractRow(0)),
+            lastRow: D20Tile.checksumFor(this.squarredMatrix.extractRow(this.squarredMatrix.size-1)),
+            firstRowReversed: D20Tile.checksumFor(this.squarredMatrix.extractRow(0).reverse()),
+            lastRowReversed: D20Tile.checksumFor(this.squarredMatrix.extractRow(this.squarredMatrix.size-1).reverse()),
+            firstCol: D20Tile.checksumFor(this.squarredMatrix.extractCol(0)),
+            lastCol: D20Tile.checksumFor(this.squarredMatrix.extractCol(this.squarredMatrix.size-1)),
+            firstColReversed: D20Tile.checksumFor(this.squarredMatrix.extractCol(0).reverse()),
+            lastColReversed: D20Tile.checksumFor(this.squarredMatrix.extractCol(this.squarredMatrix.size-1).reverse()),
         };
     }
 
@@ -66,17 +52,10 @@ export class D20Tile {
         ];
     }
 
-    private extractRow(rowNum: number) {
-        return this.originalValues.filter(({y, ..._}) => y === rowNum).sort((e1, e2) => e1.x - e2.x);
-    }
-    private extractCol(colNum: number) {
-        return this.originalValues.filter(({x, ..._}) => x === colNum).sort((e1, e2) => e1.y - e2.y);
-    }
-
     public static createFrom(str: string) {
         const lines = str.split("\n");
         const tileId = Number(lines.shift()!.replace(/^Tile (\d+):$/g, "$1"));
-        return new D20Tile(tileId, lines.map((row, y) => row.split("").map((cell, x) => ({x,y, v: cell as D20TileValue}))).flat());
+        return new D20Tile(tileId, new Squarred2DMatrix<D20TileValue>(lines.map((row, y) => row.split("").map((cell, x) => ({x,y, v: cell as D20TileValue}))).flat()));
     }
 
     public rotateClockwise(): D20Tile {
@@ -84,25 +63,11 @@ export class D20Tile {
     }
 
     public flipX() {
-        const flippedEntries = [] as D20TileEntry[];
-        for(let x=0; x<this.size; x++) {
-            for(let y=0; y<this.size; y++) {
-                let originalTileEntry = this.entryAt({x,y});
-                flippedEntries.push({ x: x, y: this.size - y - 1, v: originalTileEntry!.v });
-            }
-        }
-        return new D20Tile(this.id, flippedEntries);
+        return new D20Tile(this.id, this.squarredMatrix.flipX());
     }
 
     public flipY() {
-        const flippedEntries = [] as D20TileEntry[];
-        for(let x=0; x<this.size; x++) {
-            for(let y=0; y<this.size; y++) {
-                let originalTileEntry = this.entryAt({x,y});
-                flippedEntries.push({ x: this.size - x - 1, y: y, v: originalTileEntry!.v });
-            }
-        }
-        return new D20Tile(this.id, flippedEntries);
+        return new D20Tile(this.id, this.squarredMatrix.flipY());
     }
 
     public flipXY() {
@@ -110,18 +75,11 @@ export class D20Tile {
     }
 
     public flipMajorDiagonal() {
-        const flippedEntries = [] as D20TileEntry[];
-        for(let x=0; x<this.size; x++) {
-            for(let y=0; y<this.size; y++) {
-                let originalTileEntry = this.entryAt({x,y});
-                flippedEntries.push({ x: y, y: x, v: originalTileEntry!.v });
-            }
-        }
-        return new D20Tile(this.id, flippedEntries);
+        return new D20Tile(this.id, this.squarredMatrix.flipMajorDiagonal());
     }
 
     public entryAt({x,y}: {x:number, y:number}): D20TileEntry|undefined {
-        return this.valByCoord.get(D20Tile.coordsToKey({x,y}));
+        return this.squarredMatrix.entryAt({x,y});
     }
 
     static readonly TRANSFORMATIONS_TO_APPLY: ( (tile: D20Tile) => D20Tile )[] = [
@@ -194,9 +152,9 @@ export class D20Tile {
 
     public toDisplayableMatrix(): string[][] {
         const result = [] as string[][];
-        for(var y=0; y<this.size; y++) {
+        for(var y=0; y<this.squarredMatrix.size; y++) {
             const row = [] as string[];
-            for(var x=0; x<this.size; x++) {
+            for(var x=0; x<this.squarredMatrix.size; x++) {
                 let en = this.entryAt({x,y});
                 row.push(en===undefined?"?":en.v);
             }
@@ -366,7 +324,7 @@ export class D20Puzzle {
                 console.log(`After transforming tile : \n${currentTile.toString(true)}`);
                 coordinatedTiles.set(D20Puzzle.coordsToKey({x: colNum, y: rowNum}), { x: colNum, y: rowNum, tile: currentTile });
 
-                D20Puzzle.printCoordinatedTiles(coordinatedTiles, Array.from(coordinatedTiles.values())[0].tile.size);
+                D20Puzzle.printCoordinatedTiles(coordinatedTiles, Array.from(coordinatedTiles.values())[0].tile.squarredMatrix.size);
 
                 return { coordinatedTiles, rowNum };
             }, { coordinatedTiles, rowNum });
@@ -403,7 +361,7 @@ export class D20Puzzle {
             for(let x=0; x<=maxX; x++) {
                 let matrix: Map<string, {x:number,y:number,v:string}>;
                 if(coordinatedTiles.has(D20Puzzle.coordsToKey({x,y}))) {
-                    matrix = new Map(coordinatedTiles.get(D20Puzzle.coordsToKey({x,y}))!.tile.valByCoord);
+                    matrix = new Map(coordinatedTiles.get(D20Puzzle.coordsToKey({x,y}))!.tile.squarredMatrix.valByCoord);
                 } else {
                     matrix = new Array(tileSize).fill("").reduce((map, _, y) => {
                         return new Array(tileSize).fill( "").reduce((map, _, x) => {
