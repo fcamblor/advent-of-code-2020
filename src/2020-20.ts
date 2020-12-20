@@ -1,9 +1,9 @@
-import {bitsToNumber, mapCreateIfAbsent} from "./utils";
+import {bitsToNumber, cartesian, findMapped, mapCreateIfAbsent, reduceTimes} from "./utils";
 
 
 type D20TileValue = "#"|"."
 type D20TileEntry = {x:number, y:number, v: D20TileValue};
-type D20Checksum = { n: number, s: number, w: number, e: number };
+type D20ChecksumConstraint = { north?: number[]|undefined, south?: number[]|undefined, west?: number[]|undefined, east?: number[]|undefined };
 
 export class D20Tile {
     private readonly size: number;
@@ -115,6 +115,62 @@ export class D20Tile {
         return this.valByCoord.get(D20Tile.coordsToKey({x,y}));
     }
 
+    public transformToMatch(checksumConstraints: D20ChecksumConstraint, throwExceptionIfNotMatch = true) {
+        // No optimization yet... brute forcing possibilities...
+        const MAX_ROTATIONS = 4;
+        let candidateTile: D20Tile = this;
+        let match = candidateTile.matchesWith(checksumConstraints);
+        let rotationsCount = 0;
+        while(!match.matches && rotationsCount < MAX_ROTATIONS) {
+            if(match.suggestedTransformationsToMatch.length) {
+                candidateTile = match.suggestedTransformationsToMatch.reduce((previousCandidate, transformation) => transformation(previousCandidate), candidateTile);
+            } else {
+                candidateTile = candidateTile.rotateClockwise();
+                rotationsCount++;
+                // if(rotationsCount === 5) {
+                //     console.warn("More than 5 rotations occured !");
+                // }
+            }
+
+            match = candidateTile.matchesWith(checksumConstraints);
+        }
+
+        if(rotationsCount === MAX_ROTATIONS) {
+            if(throwExceptionIfNotMatch) {
+                throw new Error(`I guess there is a problem ... we were not able to find a match for constraint: ${JSON.stringify(checksumConstraints)}`);
+            } else {
+                return undefined;
+            }
+        }
+
+        return candidateTile;
+    }
+
+    public matchesWith(checksumConstraints: D20ChecksumConstraint): { matches: boolean, suggestedTransformationsToMatch: ((tile: D20Tile) => D20Tile)[] } {
+        let suggestedTransformationsToMatch: ((tile: D20Tile) => D20Tile)[] = [];
+        if((checksumConstraints.north !== undefined && !checksumConstraints.north.includes(this.checksums.firstRow))
+            || (checksumConstraints.south !== undefined && !checksumConstraints.south.includes(this.checksums.lastRow))
+            || (checksumConstraints.west !== undefined && !checksumConstraints.west.includes(this.checksums.firstCol))
+            || (checksumConstraints.east !== undefined && !checksumConstraints.east.includes(this.checksums.lastCol))
+        ) {
+            if(checksumConstraints.north !== undefined && checksumConstraints.north.includes(this.checksums.firstRowReversed)) {
+                suggestedTransformationsToMatch.push((tile => tile.flipY()));
+            }
+            if(checksumConstraints.south !== undefined && checksumConstraints.south.includes(this.checksums.lastRowReversed)) {
+                suggestedTransformationsToMatch.push((tile => tile.flipY()));
+            }
+            if(checksumConstraints.west !== undefined && checksumConstraints.west.includes(this.checksums.firstColReversed)) {
+                suggestedTransformationsToMatch.push((tile => tile.flipX()));
+            }
+            if(checksumConstraints.east !== undefined && checksumConstraints.east.includes(this.checksums.lastColReversed)) {
+                suggestedTransformationsToMatch.push((tile => tile.flipY()));
+            }
+            return { matches: false, suggestedTransformationsToMatch };
+        }
+
+        return { matches: true, suggestedTransformationsToMatch: suggestedTransformationsToMatch };
+    }
+
     public toString() {
         let str = "";
         for(var y=0; y<this.size; y++) {
@@ -137,7 +193,9 @@ export class D20Tile {
 }
 
 type ChecksumEntry = { checksum: number, tile: D20Tile, hint: string };
+type PerTileIdBorderChecksums = Map<number, { tile: D20Tile, borderChecksums: { checksum: number, hint: string }[] }>;
 export class D20Puzzle {
+    public readonly size: number;
     public readonly tilesPerChecksum: Map<number, ChecksumEntry[]>;
     private readonly tilesById: Map<number, D20Tile>;
 
@@ -159,6 +217,8 @@ export class D20Puzzle {
         if(checksumMatchingMoreThan2Tiles.length) {
             throw new Error("Ouch ... the same tile can be combined with more than only one other tile.. it may happen but it would complicate things a lot and I didn't handled it !...");
         }
+
+        this.size = Math.sqrt(tiles.length);
     }
 
     public findBorderTiles() {
@@ -187,10 +247,84 @@ export class D20Puzzle {
             throw new Error("Ouch, we have more than 4 border tile candidates ! (it may happen, but it would complicate things a lot and I didn't handled it !...)");
         }
 
+        const cornerTilesChecksumEntries = cornerTileIds.reduce((perTileBorderChecksumEntries, tileId) => {
+            perTileBorderChecksumEntries.set(tileId, { tile: this.tilesById.get(tileId)!, borderChecksums: perTileIdChecksumEntries.get(tileId)!.map(ce => ({ hint: ce.hint, checksum: ce.checksum })) });
+            return perTileBorderChecksumEntries;
+        }, new Map() as PerTileIdBorderChecksums);
+        const borderButNotCornerTilesChecksumEntries = borderTileIds.reduce((perTileBorderChecksumEntries, tileId) => {
+            perTileBorderChecksumEntries.set(tileId, { tile: this.tilesById.get(tileId)!, borderChecksums: perTileIdChecksumEntries.get(tileId)!.map(ce => ({ hint: ce.hint, checksum: ce.checksum })) });
+            return perTileBorderChecksumEntries;
+        }, new Map() as PerTileIdBorderChecksums);
+
         return {
             cornerTiles: cornerTileIds.map(tileId => this.tilesById.get(tileId)!),
+            cornerTilesChecksumEntries,
             borderButNotCornerTiles: borderTileIds.filter(tileId => !cornerTileIds.includes(tileId)).map(tileId => this.tilesById.get(tileId)!),
+            borderButNotCornerTilesChecksumEntries,
         };
+    }
+
+    public solvePuzzle(): SolvedPuzzle {
+        const coordinatedTiles = [] as CoordinatedTile[];
+        let borderTiles = this.findBorderTiles();
+
+        // Let's make some choices for corner tiles as we have a lot of possibilities dependending on flips/rotates
+        // Let's stick to only 1 configuration and solve the puzzle based on it
+
+        const firstTileChecksumEntries = Array.from(borderTiles.cornerTilesChecksumEntries.values())[0]!;
+        const firstTile = firstTileChecksumEntries.tile;
+
+        console.log("first tile that needs to be transformed (maybe) : ")
+        console.log(firstTile.toString());
+
+        // trying all 4 possibilities to put it in NortWest position
+        let northWestChecksumCandidates = cartesian(firstTileChecksumEntries.borderChecksums.map(ce => ce.checksum), firstTileChecksumEntries.borderChecksums.map(ce => ce.checksum)).filter(([cs1, cs2]) => cs1 !== cs2);
+        const { northWestTile, northChecksum, westChecksum } = findMapped(northWestChecksumCandidates, ([ northChecksumCandidate, westChecksumCandidate ]) => {
+            return {
+                northWestTile: firstTile.transformToMatch({
+                    north: [ northChecksumCandidate ],
+                    west: [ westChecksumCandidate ]
+                }, false),
+                northChecksum: northChecksumCandidate,
+                westChecksum: westChecksumCandidate
+            };
+        }, (value => !!value.northWestTile)) as { northWestTile: D20Tile, northChecksum: number, westChecksum: number };
+
+        console.log("Transformed tile :")
+        console.log(firstTileChecksumEntries.borderChecksums.find(ce => ce.checksum === northChecksum)!.hint+" went to the north");
+        console.log(firstTileChecksumEntries.borderChecksums.find(ce => ce.checksum === westChecksum)!.hint+" went to the west");
+        console.log(northWestTile.toString());
+
+        // Building first row
+        const { firstRowTiles, ..._ } = reduceTimes(this.size - 1, ({ firstRowTiles, lastTile}, loopIndex, loopInfos) => {
+            const lastTileEastChecksum = lastTile.checksums.lastCol;
+            const foundMatchingTilesChecksum = this.tilesPerChecksum.get(lastTileEastChecksum)!.filter(ce => ce.tile.id !== lastTile.id)!;
+            if(foundMatchingTilesChecksum.length > 1) {
+                throw new Error("That's unexpected ... we found more than one candidate...");
+            }
+            const foundMatchingTile = foundMatchingTilesChecksum[0].tile;
+            let transformedMatchingTile;
+            if(loopInfos.isLast) {
+                transformedMatchingTile = foundMatchingTile.transformToMatch({
+                    west: [ lastTileEastChecksum ],
+                    north: borderTiles.cornerTilesChecksumEntries.get(foundMatchingTile.id)!.borderChecksums.map(ce => ce.checksum),
+                    east: borderTiles.cornerTilesChecksumEntries.get(foundMatchingTile.id)!.borderChecksums.map(ce => ce.checksum)
+                })!;
+            } else {
+                transformedMatchingTile = foundMatchingTile.transformToMatch({
+                    west: [ lastTileEastChecksum ],
+                    north: borderTiles.borderButNotCornerTilesChecksumEntries.get(foundMatchingTile.id)!.borderChecksums.map(ce => ce.checksum)
+                })!;
+            }
+
+            firstRowTiles.push(transformedMatchingTile);
+
+            return { firstRowTiles, lastTile: transformedMatchingTile};
+        }, { firstRowTiles: [ northWestTile ], lastTile: northWestTile });
+
+
+
+        return new SolvedPuzzle(coordinatedTiles);
     }
 
     public computeBorderTilesMultiplication() {
@@ -203,5 +337,11 @@ export class D20Puzzle {
     public static createFrom(str: string) {
         const tiles = str.split("\n\n").map(D20Tile.createFrom);
         return new D20Puzzle(tiles);
+    }
+}
+
+type CoordinatedTile = { tile: D20Tile, x: number, y: number };
+export class SolvedPuzzle {
+    constructor(public readonly tiles: CoordinatedTile[]) {
     }
 }

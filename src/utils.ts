@@ -140,14 +140,14 @@ export function readLineGroups(str: string): string[] {
     return str.split(/\r?\n\r?\n/);
 }
 
-export function reduceTimes<T>(times: number, reducer: (accumulator: T, loopIndex: number) => T, accumulatorInit: T) {
+export function reduceTimes<T>(times: number, reducer: (accumulator: T, loopIndex: number, loopInfos: {isFirst: boolean, isLast: boolean}) => T, accumulatorInit: T) {
     return reduceRange(0, times-1, reducer, accumulatorInit);
 }
 
-export function reduceRange<T>(start: number, endIncluded: number, reducer: (accumulator: T, loopIndex: number) => T, accumulatorInit: T) {
+export function reduceRange<T>(start: number, endIncluded: number, reducer: (accumulator: T, loopIndex: number, loopInfos: {isFirst: boolean, isLast: boolean}) => T, accumulatorInit: T) {
     let accumulator = accumulatorInit;
     for(let i=start; i<=endIncluded; i++) {
-        accumulator = reducer(accumulator, i);
+        accumulator = reducer(accumulator, i, { isFirst: i===start, isLast: i===endIncluded });
     }
     return accumulator;
 }
@@ -190,4 +190,14 @@ export function mapCreateIfAbsent<K,T>(map: Map<K,T>, key: K, initValue: T): T {
         map.set(key, initValue);
     }
     return map.get(key)!;
+}
+
+export function findMapped<T,U>(arr: T[], mapper: (value: T, index: number) => U, predicate: (value: U, index: number) => boolean): U|undefined {
+    for(let i=0; i<arr.length; i++) {
+        const mapped = mapper(arr[i], i);
+        if(predicate(mapped, i)) {
+            return mapped;
+        }
+    }
+    return undefined;
 }

@@ -53,3 +53,10 @@ Tile 42:
 .##..
     `.trim())
 })
+
+test("Q2 sample", () => {
+    let d20Puzzle = D20Puzzle.createFrom(D20_Q1_SAMPLE);
+
+    let solvedPuzzle = d20Puzzle.solvePuzzle();
+    console.log(solvedPuzzle);
+})
