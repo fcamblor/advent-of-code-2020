@@ -6,9 +6,8 @@ type D20TileEntry = {x:number, y:number, v: D20TileValue};
 type D20Checksum = { n: number, s: number, w: number, e: number };
 
 export class D20Tile {
-    static readonly SIZE = 10;
-
-    private valByCoord: Map<string, D20TileEntry>;
+    private readonly size: number;
+    private readonly valByCoord: Map<string, D20TileEntry>;
     public readonly checksums: {
         firstRow: number,
         lastRow: number,
@@ -26,15 +25,22 @@ export class D20Tile {
             return valByCoord;
         }, new Map<string, D20TileEntry>());
 
+        const maxX = Math.max(...this.originalValues.map(({x, ..._}) => x));
+        const maxY = Math.max(...this.originalValues.map(({y, ..._}) => y));
+        if(maxX !== maxY) {
+            throw new Error(`Unexpected tiles values : this is not a square ! maxX=${maxX}, maxY=${maxY}`);
+        }
+        this.size = maxX + 1;
+
         this.checksums = {
             firstRow: D20Tile.checksumFor(this.extractRow(0)),
-            lastRow: D20Tile.checksumFor(this.extractRow(D20Tile.SIZE-1)),
+            lastRow: D20Tile.checksumFor(this.extractRow(this.size-1)),
             firstRowReversed: D20Tile.checksumFor(this.extractRow(0).reverse()),
-            lastRowReversed: D20Tile.checksumFor(this.extractRow(D20Tile.SIZE-1).reverse()),
+            lastRowReversed: D20Tile.checksumFor(this.extractRow(this.size-1).reverse()),
             firstCol: D20Tile.checksumFor(this.extractCol(0)),
-            lastCol: D20Tile.checksumFor(this.extractCol(D20Tile.SIZE-1)),
+            lastCol: D20Tile.checksumFor(this.extractCol(this.size-1)),
             firstColReversed: D20Tile.checksumFor(this.extractCol(0).reverse()),
-            lastColReversed: D20Tile.checksumFor(this.extractCol(D20Tile.SIZE-1).reverse()),
+            lastColReversed: D20Tile.checksumFor(this.extractCol(this.size-1).reverse()),
         };
     }
 
@@ -68,7 +74,6 @@ export class D20Tile {
         return `${x}_${y}`;
     }
 
-    private static readonly POWERS_OF_2 = [0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
     public static checksumFor(sortedTileEntries: D20TileEntry[]) {
         return bitsToNumber(sortedTileEntries.map(e => e.v==="#"?"1":"0"));
     }
