@@ -61,3 +61,11 @@ test("Q2 sample", () => {
     solvedPuzzle.rotateAndFlipUntilFindingAMonster();
     expect(solvedPuzzle.fillMonstersThenCountX()).toEqual(273);
 })
+
+test("Q2 INPUT", () => {
+    let d20Puzzle = D20Puzzle.createFrom(D20_INPUT);
+
+    let solvedPuzzle = d20Puzzle.solvePuzzle();
+    solvedPuzzle.rotateAndFlipUntilFindingAMonster();
+    expect(solvedPuzzle.fillMonstersThenCountX()).toEqual(2489);
+})

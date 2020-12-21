@@ -126,32 +126,21 @@ export class D20Tile {
         return candidateTile;
     }
 
-    public matchesWith(checksumConstraints: D20ChecksumConstraint): { matches: boolean, suggestedTransformationsToMatch: ((tile: D20Tile) => D20Tile)[] } {
-        let suggestedTransformationsToMatch: ((tile: D20Tile) => D20Tile)[] = [];
-        if((checksumConstraints.north !== undefined && !checksumConstraints.north.includes(this.checksums.firstRow.cs))
-            || (checksumConstraints.south !== undefined && !checksumConstraints.south.includes(this.checksums.lastRow.cs))
-            || (checksumConstraints.west !== undefined && !checksumConstraints.west.includes(this.checksums.firstCol.cs))
-            || (checksumConstraints.east !== undefined && !checksumConstraints.east.includes(this.checksums.lastCol.cs))
-        ) {
-            if(
-                (checksumConstraints.north !== undefined && checksumConstraints.north.includes(this.checksums.firstRowReversed.cs))
-                || (checksumConstraints.south !== undefined && checksumConstraints.south.includes(this.checksums.lastRowReversed.cs))
-                || (checksumConstraints.west !== undefined && checksumConstraints.west.includes(this.checksums.firstColReversed.cs))
-                || (checksumConstraints.east !== undefined && checksumConstraints.east.includes(this.checksums.lastColReversed.cs))
-            ){
-                suggestedTransformationsToMatch.push((tile => tile.flipY()));
-            } else if(
-                (checksumConstraints.north !== undefined && checksumConstraints.north.includes(this.checksums.lastRow.cs))
-                || (checksumConstraints.south !== undefined && checksumConstraints.south.includes(this.checksums.firstRow.cs))
-                || (checksumConstraints.west !== undefined && checksumConstraints.west.includes(this.checksums.lastCol.cs))
-                || (checksumConstraints.east !== undefined && checksumConstraints.east.includes(this.checksums.firstCol.cs))
-            ){
-                suggestedTransformationsToMatch.push((tile => tile.flipX()));
-            }
-            return { matches: false, suggestedTransformationsToMatch };
+    public matchesWith(checksumConstraints: D20ChecksumConstraint): { matches: boolean } {
+        if(checksumConstraints.north !== undefined && !checksumConstraints.north.includes(this.checksums.firstRow.cs)) {
+            return {matches: false};
+        }
+        if(checksumConstraints.south !== undefined && !checksumConstraints.south.includes(this.checksums.lastRow.cs)) {
+            return {matches: false};
+        }
+        if(checksumConstraints.west !== undefined && !checksumConstraints.west.includes(this.checksums.firstCol.cs)) {
+            return {matches: false };
+        }
+        if(checksumConstraints.east !== undefined && !checksumConstraints.east.includes(this.checksums.lastCol.cs)) {
+            return {matches: false };
         }
 
-        return { matches: true, suggestedTransformationsToMatch: suggestedTransformationsToMatch };
+        return {  matches: true };
     }
 
     public toDisplayableMatrix(): string[][] {
