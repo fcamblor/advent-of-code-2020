@@ -12,7 +12,7 @@ import {
 type D20TileValue = "#"|"."
 type D20TileEntry = {x:number, y:number, v: D20TileValue};
 type D20Checksum = { cs: number, for: string, hint: string };
-type D20ChecksumConstraint = { north?: number[]|undefined, south?: number[]|undefined, west?: number[]|undefined, east?: number[]|undefined };
+type D20ChecksumConstraint = { north?: number[]|undefined, west?: number[]|undefined };
 
 export class D20Tile {
     public readonly checksums: {
@@ -94,7 +94,7 @@ export class D20Tile {
         (tile) => tile.rotateClockwise(),
     ];
     public transformToMatch(checksumConstraints: D20ChecksumConstraint, throwExceptionIfNotMatch = true) {
-        // No optimization yet... brute forcing possibilities...
+        // No optimization yet... brute forcing possibilities as this may be complicated to match 2 or even 3 constrained dimension
         let candidateTile: D20Tile = this;
         let i=0;
         // console.log(`Looking for transformation to match: ${JSON.stringify(checksumConstraints)}`)
@@ -121,13 +121,7 @@ export class D20Tile {
         if(checksumConstraints.north !== undefined && !checksumConstraints.north.includes(this.checksums.firstRow.cs)) {
             return {matches: false};
         }
-        if(checksumConstraints.south !== undefined && !checksumConstraints.south.includes(this.checksums.lastRow.cs)) {
-            return {matches: false};
-        }
         if(checksumConstraints.west !== undefined && !checksumConstraints.west.includes(this.checksums.firstCol.cs)) {
-            return {matches: false };
-        }
-        if(checksumConstraints.east !== undefined && !checksumConstraints.east.includes(this.checksums.lastCol.cs)) {
             return {matches: false };
         }
 
@@ -310,7 +304,7 @@ export class D20Puzzle {
                         return { coordinatedTiles, rowNum };
                     }
 
-                    let currentTile: D20Tile;
+                    let currentTile: D20Tile, checksumConstraints: D20ChecksumConstraint = {};
                     if(colLoopInfos.isFirst) {
                         const northTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum,y:rowNum-1}))!.tile;
                         const tilesCandidates = this.tilesPerChecksum.get(northTile.checksums.lastRow.cs)!.filter(ce => ce.tile.id !== northTile.id);
@@ -318,6 +312,7 @@ export class D20Puzzle {
                             throw Error(`Wow.. we didn't found exactly 1 candidate for checksum ${northTile.checksums.lastRow.cs} ! (${tilesCandidates.length} candidate found)`)
                         }
                         currentTile = tilesCandidates[0].tile;
+                        checksumConstraints.north = [ northTile.checksums.lastRow.cs ];
                     } else {
                         const westTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum-1,y:rowNum}))!.tile;
                         const tilesCandidates = this.tilesPerChecksum.get(westTile.checksums.lastCol.cs)!.filter(ce => ce.tile.id !== westTile.id);
@@ -325,21 +320,6 @@ export class D20Puzzle {
                             throw Error(`Wow.. we didn't found exactly 1 candidate for checksum ${westTile.checksums.lastCol.cs} ! (${tilesCandidates.length} candidate found)`)
                         }
                         currentTile = tilesCandidates[0].tile;
-                    }
-
-                    const checksumConstraints: D20ChecksumConstraint = {};
-                    // Determining rules for NORTH constraints
-                    if(rowLoopInfos.isFirst) { // we should always have a north tile here
-                        checksumConstraints.north = perTileIdBorderChecksums.get(currentTile.id)!.borderChecksums.map(cs => cs.checksum.cs);
-                    } else {
-                        const northTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum,y:rowNum-1}))!.tile;
-                        checksumConstraints.north = [ northTile.checksums.lastRow.cs ];
-                    }
-                    // Determining rules for WEST constraints
-                    if(colLoopInfos.isFirst) {
-                        checksumConstraints.west = perTileIdBorderChecksums.get(currentTile.id)!.borderChecksums.map(cs => cs.checksum.cs);
-                    } else {
-                        const westTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum-1,y:rowNum}))!.tile;
                         checksumConstraints.west = [ westTile.checksums.lastCol.cs ];
                     }
 
