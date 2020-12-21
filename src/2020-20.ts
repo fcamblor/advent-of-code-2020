@@ -301,10 +301,18 @@ export class D20Puzzle {
                 let currentTile: D20Tile;
                 if(colLoopInfos.isFirst) {
                     const northTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum,y:rowNum-1}))!.tile;
-                    currentTile = this.tilesPerChecksum.get(northTile.checksums.lastRow.cs)!.find(ce => ce.tile.id !== northTile.id)!.tile;
+                    const tilesCandidates = this.tilesPerChecksum.get(northTile.checksums.lastRow.cs)!.filter(ce => ce.tile.id !== northTile.id);
+                    if(tilesCandidates.length !== 1) {
+                        throw Error(`Wow.. we didn't found exactly 1 candidate for checksum ${northTile.checksums.lastRow.cs} ! (${tilesCandidates.length} candidate found)`)
+                    }
+                    currentTile = tilesCandidates[0].tile;
                 } else {
-                    const eastTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum-1,y:rowNum}))!.tile;
-                    currentTile = this.tilesPerChecksum.get(eastTile.checksums.lastCol.cs)!.find(ce => ce.tile.id !== eastTile.id)!.tile;
+                    const westTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum-1,y:rowNum}))!.tile;
+                    const tilesCandidates = this.tilesPerChecksum.get(westTile.checksums.lastCol.cs)!.filter(ce => ce.tile.id !== westTile.id);
+                    if(tilesCandidates.length !== 1) {
+                        throw Error(`Wow.. we didn't found exactly 1 candidate for checksum ${westTile.checksums.lastCol.cs} ! (${tilesCandidates.length} candidate found)`)
+                    }
+                    currentTile = tilesCandidates[0].tile;
                 }
 
                 const checksumConstraints: D20ChecksumConstraint = {};
@@ -319,8 +327,8 @@ export class D20Puzzle {
                 if(colLoopInfos.isFirst) {
                     checksumConstraints.west = borderTiles.borderTilesChecksumEntriesPerTileId.get(currentTile.id)!.borderChecksums.map(cs => cs.checksum.cs);
                 } else {
-                    const eastTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum-1,y:rowNum}))!.tile;
-                    checksumConstraints.west = [ eastTile.checksums.lastCol.cs ];
+                    const westTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum-1,y:rowNum}))!.tile;
+                    checksumConstraints.west = [ westTile.checksums.lastCol.cs ];
                 }
 
                 console.log(`Before transforming tile : \n${currentTile.toString(true)}`);
