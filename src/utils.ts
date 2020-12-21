@@ -333,4 +333,43 @@ export class Squarred2DMatrix<T> {
     public static coordsToKey({x,y}: {x: number, y: number}) {
         return `${x}_${y}`;
     }
+
+    private static readonly TRANSFORMATIONS_TO_APPLY: ( (matrix: Squarred2DMatrix<any>) => Squarred2DMatrix<any> )[] = [
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.flipX(),
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.flipX().flipY(), // Re-flippingX reinitializes state
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.flipX(),
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.rotateClockwise(),
+        (tile) => tile.rotateClockwise(),
+    ];
+    public applyEveryPossibleRotationsAndFlips<U>(continuePredicate: (matrix: Squarred2DMatrix<T>) => ({continue:true}|{continue:false,result:U})): U|undefined {
+        let candidateMatrix: Squarred2DMatrix<T> = this;
+
+        // console.log("Starting matrix : ")
+        // console.log(candidateMatrix.toString());
+
+        let i=0, continuePredicateOutcome = continuePredicate(candidateMatrix);
+        while(continuePredicateOutcome.continue && i<Squarred2DMatrix.TRANSFORMATIONS_TO_APPLY.length) {
+            candidateMatrix = Squarred2DMatrix.TRANSFORMATIONS_TO_APPLY[i](candidateMatrix);
+
+            // console.log(`After transf[${i}] : ${Squarred2DMatrix.TRANSFORMATIONS_TO_APPLY[i].toString()}`);
+            // console.log(candidateMatrix.toString());
+
+            i++;
+            continuePredicateOutcome = continuePredicate(candidateMatrix);
+        }
+        return continuePredicateOutcome.continue?undefined:continuePredicateOutcome.result;
+    }
 }

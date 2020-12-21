@@ -73,40 +73,21 @@ export class D20Tile {
         return this.squarredMatrix.entryAt({x,y});
     }
 
-    static readonly TRANSFORMATIONS_TO_APPLY: ( (tile: D20Tile) => D20Tile )[] = [
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.flipX(),
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.flipX().flipY(), // Re-flippingX reinitializes state
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.flipX(),
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.rotateClockwise(),
-        (tile) => tile.rotateClockwise(),
-    ];
     public transformToMatch(checksumConstraints: D20ChecksumConstraint, throwExceptionIfNotMatch = true) {
-        // No optimization yet... brute forcing possibilities as this may be complicated to match 2 or even 3 constrained dimension
-        let candidateTile: D20Tile = this;
-        let i=0;
         // console.log(`Looking for transformation to match: ${JSON.stringify(checksumConstraints)}`)
-        // console.log("Starting point candidate : ")
-        // console.log(candidateTile.toString(true));
-        while(!candidateTile.matchesWith(checksumConstraints).matches && i<D20Tile.TRANSFORMATIONS_TO_APPLY.length) {
-            candidateTile = D20Tile.TRANSFORMATIONS_TO_APPLY[i](candidateTile);
-            // console.log(`After transf[${i}] : ${D20Tile.TRANSFORMATIONS_TO_APPLY[i].toString()}`);
+        const tileMatchingConstraint = this.squarredMatrix.applyEveryPossibleRotationsAndFlips((candidateMatrix) => {
+            const candidateTile = new D20Tile(this.id, candidateMatrix);
+
+            // console.log(`Testing matching constraint ${JSON.stringify(checksumConstraints)} against following tile :`)
             // console.log(candidateTile.toString(true));
-            i++;
-        }
-        if(!candidateTile.matchesWith(checksumConstraints)) {
+
+            if(candidateTile.matchesWith(checksumConstraints).matches) {
+                return { continue: false, result: candidateTile };
+            } else {
+                return { continue: true };
+            }
+        });
+        if(!tileMatchingConstraint) {
             if(throwExceptionIfNotMatch) {
                 throw new Error(`I guess there is a problem ... we were not able to find a match for constraint: ${JSON.stringify(checksumConstraints)}`);
             } else {
@@ -114,7 +95,7 @@ export class D20Tile {
             }
         }
 
-        return candidateTile;
+        return tileMatchingConstraint;
     }
 
     public matchesWith(checksumConstraints: D20ChecksumConstraint): { matches: boolean } {
@@ -250,7 +231,7 @@ export class D20Puzzle {
                 const wellOrientedNorthWestTile = northWestTileCandidateWithChecksums.tile.transformToMatch({
                     north: [ northChecksumCandidate ],
                     west: [ westChecksumCandidate ]
-                });
+                }, false);
 
                 if(wellOrientedNorthWestTile !== undefined) {
                     // checksums for north / west should not be shared with any other tile
@@ -455,44 +436,25 @@ export class D20SolvedPuzzle {
     static readonly MONSTER_REGEX = (lineLength: number) => new RegExp(`([\.#]{18})#([\.#].{${lineLength-19}})#([\.#]{4})##([\.#]{4})##([\.#]{4})###(.{${lineLength-19}}[\.#])#([\.#]{2})#([\.#]{2})#([\.#]{2})#([\.#]{2})#([\.#]{2})#([\.#]{3})`, "gs");
     static readonly MONSTER_REGEX_REPLACEMENT = "$1O$2O$3OO$4OO$5OOO$6O$7O$8O$9O$10O$11O$12";
 
-    static readonly TRANSFORMATIONS_TO_APPLY_TO_FIND_MONSTER: ( (matrix: Squarred2DMatrix<string>) => Squarred2DMatrix<string> )[] = [
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.flipX(),
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.flipX().flipY(), // Re-flippingX reinitializes state
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.flipX(),
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.rotateClockwise(),
-        (matrix) => matrix.rotateClockwise(),
-    ];
-
     private printableTiles: Squarred2DMatrix<string>;
     constructor(private readonly tiles: Map<string, CoordinatedTile>) {
         this.printableTiles = new Squarred2DMatrix<string>(D20SolvedPuzzle.toPrintableMatrix(this.tiles));
     }
 
     public rotateAndFlipUntilFindingAMonster() {
-        let candidatePrintableTiles = this.printableTiles;
-        let i=0;
-        while(!D20SolvedPuzzle.monsterFound(candidatePrintableTiles) && i<D20SolvedPuzzle.TRANSFORMATIONS_TO_APPLY_TO_FIND_MONSTER.length) {
-            candidatePrintableTiles = D20SolvedPuzzle.TRANSFORMATIONS_TO_APPLY_TO_FIND_MONSTER[i](candidatePrintableTiles);
-            i++;
-        }
-        if(!D20SolvedPuzzle.monsterFound(candidatePrintableTiles)) {
+        const printableTileMatchingMonster = this.printableTiles.applyEveryPossibleRotationsAndFlips((candidatePrintableTiles) => {
+            if(D20SolvedPuzzle.monsterFound(candidatePrintableTiles)) {
+                return { continue: false, result: candidatePrintableTiles };
+            } else {
+                return { continue: true };
+            }
+        })
+
+        if(!printableTileMatchingMonster) {
             throw new Error(`I guess there is a problem ... we were not able to find any monster !`);
         }
 
-        this.printableTiles = candidatePrintableTiles;
+        this.printableTiles = printableTileMatchingMonster;
 
         console.log("Solved puzzle flipped/rotated so that we can see monster in it :")
         console.log(this.printableTiles.toString());
