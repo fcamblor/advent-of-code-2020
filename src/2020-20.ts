@@ -181,7 +181,7 @@ checksums: ${JSON.stringify(this.checksums)}`;
 
 type ChecksumEntry = { checksum: D20Checksum, tile: D20Tile, hint: string };
 type PerTileIdBorderChecksums = Map<number, BorderTileWithChecksum>;
-type BorderTileWithChecksum = { tile: D20Tile, borderChecksums: { checksum: D20Checksum, hint: string }[] };
+type BorderTileWithChecksum = { tile: D20Tile, isCorner: boolean, borderChecksums: { checksum: D20Checksum, hint: string }[] };
 type PuzzleResolutionOutcome = { status: "failure" }|{ status: "success", coordinatedTiles: Map<string, CoordinatedTile> };
 export class D20Puzzle {
     public readonly size: number;
@@ -236,28 +236,23 @@ export class D20Puzzle {
             throw new Error("Ouch, we have not found exactly 4 corner tile candidates ! (having more than 4 candidates may happen, but it would complicate things a lot and I didn't handled it !...)");
         }
 
-        const cornerTilesChecksumEntries = cornerTileIds.reduce((perTileBorderChecksumEntries, tileId) => {
-            perTileBorderChecksumEntries.set(tileId, { tile: this.tilesById.get(tileId)!, borderChecksums: perTileIdChecksumEntries.get(tileId)!.map(ce => ({ hint: ce.hint, checksum: ce.checksum })) });
-            return perTileBorderChecksumEntries;
-        }, new Map() as PerTileIdBorderChecksums);
         const borderTilesChecksumEntriesPerTileId = borderTileIds.reduce((perTileBorderChecksumEntries, tileId) => {
-            perTileBorderChecksumEntries.set(tileId, { tile: this.tilesById.get(tileId)!, borderChecksums: perTileIdChecksumEntries.get(tileId)!.map(ce => ({ hint: ce.hint, checksum: ce.checksum })) });
+            perTileBorderChecksumEntries.set(tileId, {
+                tile: this.tilesById.get(tileId)!,
+                isCorner: cornerTileIds.indexOf(tileId) !== -1,
+                borderChecksums: perTileIdChecksumEntries.get(tileId)!.map(ce => ({ hint: ce.hint, checksum: ce.checksum }))
+            });
             return perTileBorderChecksumEntries;
         }, new Map() as PerTileIdBorderChecksums);
 
 
-        return {
-            cornerTiles: cornerTileIds.map(tileId => this.tilesById.get(tileId)!),
-            cornerTilesChecksumEntries,
-            borderTiles: borderTileIds.map(tileId => this.tilesById.get(tileId)!),
-            borderTilesChecksumEntriesPerTileId,
-        };
+        return borderTilesChecksumEntriesPerTileId;
     }
 
     public solvePuzzle(): D20SolvedPuzzle {
-        let borderTiles = this.findBorderTiles();
+        let borderTilesChecksumEntriesPerTileId = this.findBorderTiles();
 
-        const cornerTilesWithChecksums = Array.from(borderTiles.cornerTilesChecksumEntries.values());
+        const cornerTilesWithChecksums = Array.from(borderTilesChecksumEntriesPerTileId.values()).filter(bc => bc.isCorner);
         console.log(`Following corner tiles identified : ${cornerTilesWithChecksums.map(ct => ct.tile.id).join(", ")}`)
 
         // Based on tests, it appears that every corner tiles cannot be placed at the nort-west corner
@@ -270,7 +265,7 @@ export class D20Puzzle {
             const northWestTileCandidateWithChecksums = cornerTilesWithChecksums[i]!;
 
             console.log(`Trying with corner tile ${northWestTileCandidateWithChecksums.tile.id} in the north-west position...`)
-            puzzleSolutionOutcome = this.tryToSolvePuzzleStartingWithNorthWestTile(northWestTileCandidateWithChecksums, borderTiles.borderTilesChecksumEntriesPerTileId);
+            puzzleSolutionOutcome = this.tryToSolvePuzzleStartingWithNorthWestTile(northWestTileCandidateWithChecksums, borderTilesChecksumEntriesPerTileId);
             console.log(`North-West Corner tile ${northWestTileCandidateWithChecksums.tile.id} puzzle resolution : ${puzzleSolutionOutcome.status} !`);
             if(puzzleSolutionOutcome.status === 'success') {
                 break;
@@ -381,9 +376,9 @@ export class D20Puzzle {
     }
 
     public computeBorderTilesMultiplication() {
-        const borderTiles = this.findBorderTiles();
-        return borderTiles.cornerTiles.reduce((result, borderTile) => {
-            return result * borderTile.id;
+        const borderTilesChecksumEntriesPerTileId = this.findBorderTiles();
+        return Array.from(borderTilesChecksumEntriesPerTileId.values()).filter(bc => bc.isCorner).reduce((result, borderTileWithChecksum) => {
+            return result * borderTileWithChecksum.tile.id;
         }, 1);
     }
 
