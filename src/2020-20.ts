@@ -402,7 +402,7 @@ export class D20Puzzle {
 
 type CoordinatedTile = { tile: D20Tile, x: number, y: number };
 export class D20SolvedPuzzle {
-    static readonly MONSTER_REGEX = /([\.#]{18})#([\.#].{5})#([\.#]{4})##([\.#]{4})##([\.#]{4})###(.{5}[\.#])#([\.#]{2})#([\.#]{2})#([\.#]{2})#([\.#]{2})#([\.#]{2})#([\.#]{3})/gs;
+    static readonly MONSTER_REGEX = (lineLength: number) => new RegExp(`([\.#]{18})#([\.#].{${lineLength-19}})#([\.#]{4})##([\.#]{4})##([\.#]{4})###(.{${lineLength-19}}[\.#])#([\.#]{2})#([\.#]{2})#([\.#]{2})#([\.#]{2})#([\.#]{2})#([\.#]{3})`, "gs");
     static readonly MONSTER_REGEX_REPLACEMENT = "$1O$2O$3OO$4OO$5OOO$6O$7O$8O$9O$10O$11O$12";
 
     static readonly TRANSFORMATIONS_TO_APPLY_TO_FIND_MONSTER: ( (matrix: Squarred2DMatrix<string>) => Squarred2DMatrix<string> )[] = [
@@ -447,10 +447,11 @@ export class D20SolvedPuzzle {
     }
 
     public fillMonstersThenCountX() {
-
         let str = this.printableTiles.print();
-        while(str.match(D20SolvedPuzzle.MONSTER_REGEX)) {
-            str = str.replace(D20SolvedPuzzle.MONSTER_REGEX, D20SolvedPuzzle.MONSTER_REGEX_REPLACEMENT);
+        const lineSize = str.split("\n")[0].length;
+        let regex = D20SolvedPuzzle.MONSTER_REGEX(lineSize);
+        while(str.match(regex)) {
+            str = str.replace(regex, D20SolvedPuzzle.MONSTER_REGEX_REPLACEMENT);
         }
 
         console.log(str);
@@ -460,12 +461,13 @@ export class D20SolvedPuzzle {
 
     public static monsterFound(printableTiles: Squarred2DMatrix<string>): boolean {
         const str = printableTiles.print();
-        const firstFoundCoords = D20SolvedPuzzle.findMonsterStartingAt(0, str);
-        return firstFoundCoords !== undefined;
+        return D20SolvedPuzzle.findMonsterStartingAt(str);
     }
 
-    public static findMonsterStartingAt(index: number, str: string) {
-        return !!str.substr(index).match(D20SolvedPuzzle.MONSTER_REGEX);
+    public static findMonsterStartingAt(str: string) {
+        const lineSize = str.split("\n")[0].length;
+        let regex = D20SolvedPuzzle.MONSTER_REGEX(lineSize);
+        return !!str.match(regex);
     }
 
     public static toPrintableMatrix(coordinatedTiles: Map<string, CoordinatedTile>) {
