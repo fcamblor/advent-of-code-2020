@@ -3,7 +3,7 @@ import {
     cartesian, countLetterOccurencesInString,
     fill2DMatrix, fillAroundMatrix,
     findMapped,
-    mapCreateIfAbsent, printMatrix,
+    mapCreateIfAbsent, matrixToStr,
     reduceRange,
     reduceTimes, Squarred2DMatrix, Squarred2DMatrixEntry
 } from "./utils";
@@ -110,9 +110,13 @@ export class D20Tile {
         // No optimization yet... brute forcing possibilities...
         let candidateTile: D20Tile = this;
         let i=0;
-        console.log(`Looking for transformation to match: ${JSON.stringify(checksumConstraints)}`)
+        // console.log(`Looking for transformation to match: ${JSON.stringify(checksumConstraints)}`)
+        // console.log("Starting point candidate : ")
+        // console.log(candidateTile.toString(true));
         while(!candidateTile.matchesWith(checksumConstraints).matches && i<D20Tile.TRANSFORMATIONS_TO_APPLY.length) {
             candidateTile = D20Tile.TRANSFORMATIONS_TO_APPLY[i](candidateTile);
+            // console.log(`After transf[${i}] : ${D20Tile.TRANSFORMATIONS_TO_APPLY[i].toString()}`);
+            // console.log(candidateTile.toString(true));
             i++;
         }
         if(!candidateTile.matchesWith(checksumConstraints)) {
@@ -176,7 +180,9 @@ checksums: ${JSON.stringify(this.checksums)}`;
 }
 
 type ChecksumEntry = { checksum: D20Checksum, tile: D20Tile, hint: string };
-type PerTileIdBorderChecksums = Map<number, { tile: D20Tile, borderChecksums: { checksum: D20Checksum, hint: string }[] }>;
+type PerTileIdBorderChecksums = Map<number, BorderTileWithChecksum>;
+type BorderTileWithChecksum = { tile: D20Tile, borderChecksums: { checksum: D20Checksum, hint: string }[] };
+type PuzzleResolutionOutcome = { status: "failure" }|{ status: "success", coordinatedTiles: Map<string, CoordinatedTile> };
 export class D20Puzzle {
     public readonly size: number;
     public readonly tilesPerChecksum: Map<number, ChecksumEntry[]>;
@@ -226,8 +232,8 @@ export class D20Puzzle {
         }, new Map<number, ChecksumEntry[]>());
 
         let cornerTileIds = Array.from(cornerTileCandidates.keys());
-        if(cornerTileIds.length > 4) {
-            throw new Error("Ouch, we have more than 4 border tile candidates ! (it may happen, but it would complicate things a lot and I didn't handled it !...)");
+        if(cornerTileIds.length !== 4) {
+            throw new Error("Ouch, we have not found exactly 4 corner tile candidates ! (having more than 4 candidates may happen, but it would complicate things a lot and I didn't handled it !...)");
         }
 
         const cornerTilesChecksumEntries = cornerTileIds.reduce((perTileBorderChecksumEntries, tileId) => {
@@ -251,17 +257,51 @@ export class D20Puzzle {
     public solvePuzzle(): D20SolvedPuzzle {
         let borderTiles = this.findBorderTiles();
 
+        const cornerTilesWithChecksums = Array.from(borderTiles.cornerTilesChecksumEntries.values());
+        console.log(`Following corner tiles identified : ${cornerTilesWithChecksums.map(ct => ct.tile.id).join(", ")}`)
+
+        // Based on tests, it appears that every corner tiles cannot be placed at the nort-west corner
+        // (by picking a tile randomly, it happens that we don't find any solution...)
+        // That's why we're going to iterate over potentially the 4 tiles options and see if one of them
+        // succeeds to solve the puzzle resolution
+        // If not, then we'll try with the next corner tile candidate for north-west corner
+        let puzzleSolutionOutcome: PuzzleResolutionOutcome = { status:'failure' };
+        for(let i=0; i<cornerTilesWithChecksums.length; i++) {
+            const northWestTileCandidateWithChecksums = cornerTilesWithChecksums[i]!;
+
+            console.log(`Trying with corner tile ${northWestTileCandidateWithChecksums.tile.id} in the north-west position...`)
+            puzzleSolutionOutcome = this.tryToSolvePuzzleStartingWithNorthWestTile(northWestTileCandidateWithChecksums, borderTiles.borderTilesChecksumEntriesPerTileId);
+            console.log(`North-West Corner tile ${northWestTileCandidateWithChecksums.tile.id} puzzle resolution : ${puzzleSolutionOutcome.status} !`);
+            if(puzzleSolutionOutcome.status === 'success') {
+                break;
+            }
+        }
+
+        if(puzzleSolutionOutcome.status === 'failure') {
+            throw new Error("Something went wrong : we didn't found any solution for the puzzle ! :(");
+        }
+
+        console.log("First found puzzle solution :")
+        D20Puzzle.printCoordinatedTiles(puzzleSolutionOutcome.coordinatedTiles, Array.from(puzzleSolutionOutcome.coordinatedTiles.values())[0].tile.squarredMatrix.size);
+
+        const subtractedTiles = Array.from(puzzleSolutionOutcome.coordinatedTiles!.entries()).reduce((subtractedTiles, [key, coordinatedTile]) => {
+            subtractedTiles.set(key, {...coordinatedTile, tile: coordinatedTile.tile.subtractBorders()});
+            return subtractedTiles;
+        }, new Map<string, CoordinatedTile>());
+
+        console.log("Tiles with subtracted borders :")
+        D20Puzzle.printCoordinatedTiles(subtractedTiles, Array.from(subtractedTiles.values())[0].tile.squarredMatrix.size);
+        return new D20SolvedPuzzle(subtractedTiles);
+    }
+
+    private tryToSolvePuzzleStartingWithNorthWestTile(northWestTileCandidateWithChecksums: BorderTileWithChecksum, perTileIdBorderChecksums: PerTileIdBorderChecksums): PuzzleResolutionOutcome {
         // Let's make some choices for corner tiles as we have a lot of possibilities dependending on flips/rotates
         // Let's stick to only 1 configuration and solve the puzzle based on it
 
-        const firstTileChecksumEntries = Array.from(borderTiles.cornerTilesChecksumEntries.values())[0]!;
-        const firstTile = firstTileChecksumEntries.tile;
-
-        console.log("first tile that needs to be transformed (maybe) : ")
-        console.log(firstTile.toString(true));
+        const firstTile = northWestTileCandidateWithChecksums.tile;
 
         // trying all 4 possibilities to put it in NortWest position
-        let northWestChecksumCandidates = cartesian(firstTileChecksumEntries.borderChecksums.map(ce => ce.checksum.cs), firstTileChecksumEntries.borderChecksums.map(ce => ce.checksum.cs)).filter(([cs1, cs2]) => cs1 !== cs2);
+        let northWestChecksumCandidates = cartesian(northWestTileCandidateWithChecksums.borderChecksums.map(ce => ce.checksum.cs), northWestTileCandidateWithChecksums.borderChecksums.map(ce => ce.checksum.cs)).filter(([cs1, cs2]) => cs1 !== cs2);
         const { northWestTile, northChecksum, westChecksum } = findMapped(northWestChecksumCandidates, ([ northChecksumCandidate, westChecksumCandidate ]) => {
             return {
                 northWestTile: firstTile.transformToMatch({
@@ -273,74 +313,71 @@ export class D20Puzzle {
             };
         }, (value => !!value.northWestTile)) as { northWestTile: D20Tile, northChecksum: number, westChecksum: number };
 
-        console.log("Transformed tile :")
-        console.log(firstTileChecksumEntries.borderChecksums.find(ce => ce.checksum.cs === northChecksum)!.hint+" went to the north");
-        console.log(firstTileChecksumEntries.borderChecksums.find(ce => ce.checksum.cs === westChecksum)!.hint+" went to the west");
-        console.log(northWestTile.toString(true));
+        // console.log("Transformed tile :")
+        // console.log(northWestTileCandidateWithChecksums.borderChecksums.find(ce => ce.checksum.cs === northChecksum)!.hint+" went to the north");
+        // console.log(northWestTileCandidateWithChecksums.borderChecksums.find(ce => ce.checksum.cs === westChecksum)!.hint+" went to the west");
+        // console.log(northWestTile.toString(true));
 
         const buildingCoordinatedTiles = new Map<string, CoordinatedTile>([ [ D20Puzzle.coordsToKey({x:0,y:0}), { x:0, y:0, tile: northWestTile } ] ]);
 
-        const {coordinatedTiles } = reduceRange(0, this.size - 1, ({ coordinatedTiles}, rowNum, rowLoopInfos) => {
-            return reduceRange(0, this.size - 1, ({ coordinatedTiles, rowNum }, colNum, colLoopInfos) => {
-                // Special case : we alreay have north-west tile set (see init)
-                if(rowNum === 0 && colNum === 0) {
+        try {
+            const {coordinatedTiles } = reduceRange(0, this.size - 1, ({ coordinatedTiles}, rowNum, rowLoopInfos) => {
+                return reduceRange(0, this.size - 1, ({ coordinatedTiles, rowNum }, colNum, colLoopInfos) => {
+                    // Special case : we alreay have north-west tile set (see init)
+                    if(rowNum === 0 && colNum === 0) {
+                        return { coordinatedTiles, rowNum };
+                    }
+
+                    let currentTile: D20Tile;
+                    if(colLoopInfos.isFirst) {
+                        const northTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum,y:rowNum-1}))!.tile;
+                        const tilesCandidates = this.tilesPerChecksum.get(northTile.checksums.lastRow.cs)!.filter(ce => ce.tile.id !== northTile.id);
+                        if(tilesCandidates.length !== 1) {
+                            throw Error(`Wow.. we didn't found exactly 1 candidate for checksum ${northTile.checksums.lastRow.cs} ! (${tilesCandidates.length} candidate found)`)
+                        }
+                        currentTile = tilesCandidates[0].tile;
+                    } else {
+                        const westTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum-1,y:rowNum}))!.tile;
+                        const tilesCandidates = this.tilesPerChecksum.get(westTile.checksums.lastCol.cs)!.filter(ce => ce.tile.id !== westTile.id);
+                        if(tilesCandidates.length !== 1) {
+                            throw Error(`Wow.. we didn't found exactly 1 candidate for checksum ${westTile.checksums.lastCol.cs} ! (${tilesCandidates.length} candidate found)`)
+                        }
+                        currentTile = tilesCandidates[0].tile;
+                    }
+
+                    const checksumConstraints: D20ChecksumConstraint = {};
+                    // Determining rules for NORTH constraints
+                    if(rowLoopInfos.isFirst) { // we should always have a north tile here
+                        checksumConstraints.north = perTileIdBorderChecksums.get(currentTile.id)!.borderChecksums.map(cs => cs.checksum.cs);
+                    } else {
+                        const northTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum,y:rowNum-1}))!.tile;
+                        checksumConstraints.north = [ northTile.checksums.lastRow.cs ];
+                    }
+                    // Determining rules for WEST constraints
+                    if(colLoopInfos.isFirst) {
+                        checksumConstraints.west = perTileIdBorderChecksums.get(currentTile.id)!.borderChecksums.map(cs => cs.checksum.cs);
+                    } else {
+                        const westTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum-1,y:rowNum}))!.tile;
+                        checksumConstraints.west = [ westTile.checksums.lastCol.cs ];
+                    }
+
+                    // console.log(`Before transforming tile : \n${currentTile.toString(true)}`);
+                    currentTile = currentTile.transformToMatch(checksumConstraints, true)!;
+                    // console.log(`After transforming tile : \n${currentTile.toString(true)}`);
+                    coordinatedTiles.set(D20Puzzle.coordsToKey({x: colNum, y: rowNum}), { x: colNum, y: rowNum, tile: currentTile });
+
+                    // D20Puzzle.printCoordinatedTiles(coordinatedTiles, Array.from(coordinatedTiles.values())[0].tile.squarredMatrix.size);
+
                     return { coordinatedTiles, rowNum };
-                }
+                }, { coordinatedTiles, rowNum });
 
-                let currentTile: D20Tile;
-                if(colLoopInfos.isFirst) {
-                    const northTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum,y:rowNum-1}))!.tile;
-                    const tilesCandidates = this.tilesPerChecksum.get(northTile.checksums.lastRow.cs)!.filter(ce => ce.tile.id !== northTile.id);
-                    if(tilesCandidates.length !== 1) {
-                        throw Error(`Wow.. we didn't found exactly 1 candidate for checksum ${northTile.checksums.lastRow.cs} ! (${tilesCandidates.length} candidate found)`)
-                    }
-                    currentTile = tilesCandidates[0].tile;
-                } else {
-                    const westTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum-1,y:rowNum}))!.tile;
-                    const tilesCandidates = this.tilesPerChecksum.get(westTile.checksums.lastCol.cs)!.filter(ce => ce.tile.id !== westTile.id);
-                    if(tilesCandidates.length !== 1) {
-                        throw Error(`Wow.. we didn't found exactly 1 candidate for checksum ${westTile.checksums.lastCol.cs} ! (${tilesCandidates.length} candidate found)`)
-                    }
-                    currentTile = tilesCandidates[0].tile;
-                }
-
-                const checksumConstraints: D20ChecksumConstraint = {};
-                // Determining rules for NORTH constraints
-                if(rowLoopInfos.isFirst) { // we should always have a north tile here
-                    checksumConstraints.north = borderTiles.borderTilesChecksumEntriesPerTileId.get(currentTile.id)!.borderChecksums.map(cs => cs.checksum.cs);
-                } else {
-                    const northTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum,y:rowNum-1}))!.tile;
-                    checksumConstraints.north = [ northTile.checksums.lastRow.cs ];
-                }
-                // Determining rules for WEST constraints
-                if(colLoopInfos.isFirst) {
-                    checksumConstraints.west = borderTiles.borderTilesChecksumEntriesPerTileId.get(currentTile.id)!.borderChecksums.map(cs => cs.checksum.cs);
-                } else {
-                    const westTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum-1,y:rowNum}))!.tile;
-                    checksumConstraints.west = [ westTile.checksums.lastCol.cs ];
-                }
-
-                console.log(`Before transforming tile : \n${currentTile.toString(true)}`);
-                currentTile = currentTile.transformToMatch(checksumConstraints, true)!;
-                console.log(`After transforming tile : \n${currentTile.toString(true)}`);
-                coordinatedTiles.set(D20Puzzle.coordsToKey({x: colNum, y: rowNum}), { x: colNum, y: rowNum, tile: currentTile });
-
-                D20Puzzle.printCoordinatedTiles(coordinatedTiles, Array.from(coordinatedTiles.values())[0].tile.squarredMatrix.size);
-
-                return { coordinatedTiles, rowNum };
-            }, { coordinatedTiles, rowNum });
-
-            return { coordinatedTiles };
-        }, { coordinatedTiles: buildingCoordinatedTiles })
-
-
-        const subtractedTiles = Array.from(coordinatedTiles.entries()).reduce((subtractedTiles, [key, coordinatedTile]) => {
-            subtractedTiles.set(key, {...coordinatedTile, tile: coordinatedTile.tile.subtractBorders()});
-            return subtractedTiles;
-        }, new Map<string, CoordinatedTile>());
-
-        D20Puzzle.printCoordinatedTiles(subtractedTiles, Array.from(subtractedTiles.values())[0].tile.squarredMatrix.size);
-        return new D20SolvedPuzzle(subtractedTiles);
+                return { coordinatedTiles };
+            }, { coordinatedTiles: buildingCoordinatedTiles })
+            return { coordinatedTiles, status: 'success' };
+        } catch(e) {
+            // If at some point we encountered some exceptions, it means that we reached a dead end and we should consider puzzle resolution as a failure
+            return { status: 'failure' };
+        }
     }
 
     public computeBorderTilesMultiplication() {
@@ -384,7 +421,7 @@ export class D20Puzzle {
             }
         }
 
-        printMatrix(matrixToPrint);
+        console.log(matrixToStr(matrixToPrint));
     }
 
 }
@@ -432,24 +469,29 @@ export class D20SolvedPuzzle {
         }
 
         this.printableTiles = candidatePrintableTiles;
+
+        console.log("Solved puzzle flipped/rotated so that we can see monster in it :")
+        console.log(this.printableTiles.toString());
+
         return this;
     }
 
     public fillMonstersThenCountX() {
-        let str = this.printableTiles.print();
+        let str = this.printableTiles.toString();
         const lineSize = str.split("\n")[0].length;
         let regex = D20SolvedPuzzle.MONSTER_REGEX(lineSize);
         while(str.match(regex)) {
             str = str.replace(regex, D20SolvedPuzzle.MONSTER_REGEX_REPLACEMENT);
         }
 
+        console.log("Puzzle with monster inside :")
         console.log(str);
 
         return countLetterOccurencesInString("#", str);
     }
 
     public static monsterFound(printableTiles: Squarred2DMatrix<string>): boolean {
-        const str = printableTiles.print();
+        const str = printableTiles.toString();
         return D20SolvedPuzzle.findMonsterStartingAt(str);
     }
 

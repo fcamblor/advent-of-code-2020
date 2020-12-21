@@ -212,7 +212,7 @@ export function fillAroundMatrix<T>(matrix: Map<String, {x:number,y:number,v:T}>
     }
 }
 
-export function printMatrix<T>(matr: Map<string, {x:number,y:number,v:T}>): string {
+export function matrixToStr<T>(matr: Map<string, {x:number,y:number,v:T}>): string {
     let str = "";
     const maxY = Math.max(...Array.from(matr.values()).map(c => c.y)) + 1;
     const maxX = Math.max(...Array.from(matr.values()).map(c => c.x)) + 1;
@@ -225,7 +225,6 @@ export function printMatrix<T>(matr: Map<string, {x:number,y:number,v:T}>): stri
         str+="\n";
     }
 
-    console.log(str.substr(0, str.length-1));
     return str;
 }
 
@@ -327,8 +326,8 @@ export class Squarred2DMatrix<T> {
         return this.valByCoord.get(Squarred2DMatrix.coordsToKey({x,y}));
     }
 
-    public print() {
-        return printMatrix(this.valByCoord);
+    public toString() {
+        return matrixToStr(this.valByCoord);
     }
 
     public static coordsToKey({x,y}: {x: number, y: number}) {
