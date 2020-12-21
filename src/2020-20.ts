@@ -11,7 +11,7 @@ import {
 
 type D20TileValue = "#"|"."
 type D20TileEntry = {x:number, y:number, v: D20TileValue};
-type D20Checksum = { cs: number, for: string };
+type D20Checksum = { cs: number, for: string, hint: string };
 type D20ChecksumConstraint = { north?: number[]|undefined, south?: number[]|undefined, west?: number[]|undefined, east?: number[]|undefined };
 
 export class D20Tile {
@@ -28,28 +28,15 @@ export class D20Tile {
 
     constructor(public readonly id: number, public readonly squarredMatrix: Squarred2DMatrix<D20TileValue>) {
         this.checksums = {
-            firstRow: D20Tile.checksumFor(this.squarredMatrix.extractRow(0)),
-            lastRow: D20Tile.checksumFor(this.squarredMatrix.extractRow(this.squarredMatrix.size-1)),
-            firstRowReversed: D20Tile.checksumFor(this.squarredMatrix.extractRow(0).reverse()),
-            lastRowReversed: D20Tile.checksumFor(this.squarredMatrix.extractRow(this.squarredMatrix.size-1).reverse()),
-            firstCol: D20Tile.checksumFor(this.squarredMatrix.extractCol(0)),
-            lastCol: D20Tile.checksumFor(this.squarredMatrix.extractCol(this.squarredMatrix.size-1)),
-            firstColReversed: D20Tile.checksumFor(this.squarredMatrix.extractCol(0).reverse()),
-            lastColReversed: D20Tile.checksumFor(this.squarredMatrix.extractCol(this.squarredMatrix.size-1).reverse()),
+            firstRow: D20Tile.checksumFor("firstRow", this.squarredMatrix.extractRow(0)),
+            lastRow: D20Tile.checksumFor("lastRow", this.squarredMatrix.extractRow(this.squarredMatrix.size-1)),
+            firstRowReversed: D20Tile.checksumFor("firstRowReversed", this.squarredMatrix.extractRow(0).reverse()),
+            lastRowReversed: D20Tile.checksumFor("lastRowReversed", this.squarredMatrix.extractRow(this.squarredMatrix.size-1).reverse()),
+            firstCol: D20Tile.checksumFor("firstCol", this.squarredMatrix.extractCol(0)),
+            lastCol: D20Tile.checksumFor("lastCol", this.squarredMatrix.extractCol(this.squarredMatrix.size-1)),
+            firstColReversed: D20Tile.checksumFor("firstColReversed", this.squarredMatrix.extractCol(0).reverse()),
+            lastColReversed: D20Tile.checksumFor("lastColReversed", this.squarredMatrix.extractCol(this.squarredMatrix.size-1).reverse()),
         };
-    }
-
-    public checksumEntries() {
-        return [
-            {name: "firstRow", checksum: this.checksums.firstRow},
-            {name: "lastRow", checksum: this.checksums.lastRow},
-            {name: "firstRowReversed", checksum: this.checksums.firstRowReversed},
-            {name: "lastRowReversed", checksum: this.checksums.lastRowReversed},
-            {name: "firstCol", checksum: this.checksums.firstCol},
-            {name: "lastCol", checksum: this.checksums.lastCol},
-            {name: "firstColReversed", checksum: this.checksums.firstColReversed},
-            {name: "lastColReversed", checksum: this.checksums.lastColReversed},
-        ];
     }
 
     public static createFrom(str: string) {
@@ -174,8 +161,8 @@ checksums: ${JSON.stringify(this.checksums)}`;
         return `${x}_${y}`;
     }
 
-    public static checksumFor(sortedTileEntries: D20TileEntry[]) {
-        return { cs: bitsToNumber(sortedTileEntries.map(e => e.v==="#"?"1":"0")), for: sortedTileEntries.map(e => e.v).join("") };
+    public static checksumFor(hint: string, sortedTileEntries: D20TileEntry[]) {
+        return { hint, cs: bitsToNumber(sortedTileEntries.map(e => e.v==="#"?"1":"0")), for: sortedTileEntries.map(e => e.v).join("") };
     }
 }
 
@@ -190,8 +177,8 @@ export class D20Puzzle {
 
     constructor(public readonly tiles: D20Tile[]) {
         this.tilesPerChecksum = tiles.reduce((tilesPerChecksum, tile) => {
-            tile.checksumEntries().forEach(ce => {
-                mapCreateIfAbsent(tilesPerChecksum, ce.checksum.cs, []).push({ checksum: ce.checksum, tile, hint: ce.name });
+            Object.values(tile.checksums).forEach(checksum => {
+                mapCreateIfAbsent(tilesPerChecksum, checksum.cs, []).push({ checksum, tile, hint: checksum.hint });
             });
             return tilesPerChecksum;
         }, new Map<number, ChecksumEntry[]>())
