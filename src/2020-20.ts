@@ -230,37 +230,99 @@ export class D20Puzzle {
         return borderTilesChecksumEntriesPerTileId;
     }
 
+    public findfirstValidNorthWestCornerTileOrientation(borderTilesChecksumEntriesPerTileId: PerTileIdBorderChecksums) {
+        let cornerTilesWithChecksums = Array.from(borderTilesChecksumEntriesPerTileId.values()).filter(tc => tc.isCorner);
+
+        // Every corner tiles should have at least 2 valid orientation
+        // To make things faster, we will only look for the first one, but we may look at every possible solutions by removing
+        // this line...
+        cornerTilesWithChecksums = [ cornerTilesWithChecksums[0] ];
+
+        const northWestCornerTileCandidates = cornerTilesWithChecksums.map(northWestTileCandidateWithChecksums => {
+            // trying all 4 possibilities to put it in NortWest position
+            let northWestChecksumCandidates = cartesian(
+                northWestTileCandidateWithChecksums.borderChecksums.map(ce => ce.checksum.cs),
+                northWestTileCandidateWithChecksums.borderChecksums.map(ce => ce.checksum.cs)
+            ).filter(([cs1, cs2]) => cs1 !== cs2);
+
+            for(let i=0; i<northWestChecksumCandidates.length; i++) {
+                const [ northChecksumCandidate, westChecksumCandidate ] = northWestChecksumCandidates[i];
+                const wellOrientedNorthWestTile = northWestTileCandidateWithChecksums.tile.transformToMatch({
+                    north: [ northChecksumCandidate ],
+                    west: [ westChecksumCandidate ]
+                });
+
+                if(wellOrientedNorthWestTile !== undefined) {
+                    // checksums for north / west should not be shared with any other tile
+                    // otherwise we may end up into an unresolvable puzzle state
+                    if(this.tilesPerChecksum.get(wellOrientedNorthWestTile.checksums.firstRow.cs)!.length === 1
+                       && this.tilesPerChecksum.get(wellOrientedNorthWestTile.checksums.firstCol.cs)!.length === 1) {
+                        return wellOrientedNorthWestTile;
+                    }
+                }
+            }
+
+            throw new Error(`That's unexpected ... we didn't found any possible corner orientation for north-west for tile ${northWestTileCandidateWithChecksums.tile.id}`)
+        });
+
+        // Returning first matching candidate
+        return northWestCornerTileCandidates[0];
+    }
+
     public solvePuzzle(): D20SolvedPuzzle {
         let borderTilesChecksumEntriesPerTileId = this.findBorderTiles();
 
         const cornerTilesWithChecksums = Array.from(borderTilesChecksumEntriesPerTileId.values()).filter(bc => bc.isCorner);
         console.log(`Following corner tiles identified : ${cornerTilesWithChecksums.map(ct => ct.tile.id).join(", ")}`)
 
-        // Based on tests, it appears that every corner tiles cannot be placed at the nort-west corner
-        // (by picking a tile randomly, it happens that we don't find any solution...)
-        // That's why we're going to iterate over potentially the 4 tiles options and see if one of them
-        // succeeds to solve the puzzle resolution
-        // If not, then we'll try with the next corner tile candidate for north-west corner
-        let puzzleSolutionOutcome: PuzzleResolutionOutcome = { status:'failure' };
-        for(let i=0; i<cornerTilesWithChecksums.length; i++) {
-            const northWestTileCandidateWithChecksums = cornerTilesWithChecksums[i]!;
+        // Every corner tiles may not be placed at the north-west position, let's find candidates for this position...
+        const northWestCornerTile = this.findfirstValidNorthWestCornerTileOrientation(borderTilesChecksumEntriesPerTileId);
+        console.log(`North-west corner tile identified`)
+        console.log(northWestCornerTile.toString(true));
 
-            console.log(`Trying with corner tile ${northWestTileCandidateWithChecksums.tile.id} in the north-west position...`)
-            puzzleSolutionOutcome = this.tryToSolvePuzzleStartingWithNorthWestTile(northWestTileCandidateWithChecksums, borderTilesChecksumEntriesPerTileId);
-            console.log(`North-West Corner tile ${northWestTileCandidateWithChecksums.tile.id} puzzle resolution : ${puzzleSolutionOutcome.status} !`);
-            if(puzzleSolutionOutcome.status === 'success') {
-                break;
-            }
-        }
+        const {coordinatedTiles } = reduceRange(0, this.size - 1, ({ coordinatedTiles}, rowNum, rowLoopInfos) => {
+            return reduceRange(0, this.size - 1, ({ coordinatedTiles, rowNum }, colNum, colLoopInfos) => {
+                // Special case : we alreay have north-west tile set (see init)
+                if(rowNum === 0 && colNum === 0) {
+                    return { coordinatedTiles, rowNum };
+                }
 
-        if(puzzleSolutionOutcome.status === 'failure') {
-            throw new Error("Something went wrong : we didn't found any solution for the puzzle ! :(");
-        }
+                let currentTile: D20Tile, checksumConstraints: D20ChecksumConstraint = {};
+                if(colLoopInfos.isFirst) {
+                    const northTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum,y:rowNum-1}))!.tile;
+                    const tilesCandidates = this.tilesPerChecksum.get(northTile.checksums.lastRow.cs)!.filter(ce => ce.tile.id !== northTile.id);
+                    if(tilesCandidates.length !== 1) {
+                        throw Error(`Wow.. we didn't found exactly 1 candidate for checksum ${northTile.checksums.lastRow.cs} ! (${tilesCandidates.length} candidate found)`)
+                    }
+                    currentTile = tilesCandidates[0].tile;
+                    checksumConstraints.north = [ northTile.checksums.lastRow.cs ];
+                } else {
+                    const westTile = coordinatedTiles.get(D20Puzzle.coordsToKey({x:colNum-1,y:rowNum}))!.tile;
+                    const tilesCandidates = this.tilesPerChecksum.get(westTile.checksums.lastCol.cs)!.filter(ce => ce.tile.id !== westTile.id);
+                    if(tilesCandidates.length !== 1) {
+                        throw Error(`Wow.. we didn't found exactly 1 candidate for checksum ${westTile.checksums.lastCol.cs} ! (${tilesCandidates.length} candidate found)`)
+                    }
+                    currentTile = tilesCandidates[0].tile;
+                    checksumConstraints.west = [ westTile.checksums.lastCol.cs ];
+                }
+
+                // console.log(`Before transforming tile : \n${currentTile.toString(true)}`);
+                currentTile = currentTile.transformToMatch(checksumConstraints, true)!;
+                // console.log(`After transforming tile : \n${currentTile.toString(true)}`);
+                coordinatedTiles.set(D20Puzzle.coordsToKey({x: colNum, y: rowNum}), { x: colNum, y: rowNum, tile: currentTile });
+
+                // D20Puzzle.printCoordinatedTiles(coordinatedTiles, Array.from(coordinatedTiles.values())[0].tile.squarredMatrix.size);
+
+                return { coordinatedTiles, rowNum };
+            }, { coordinatedTiles, rowNum });
+
+            return { coordinatedTiles };
+        }, { coordinatedTiles: new Map<string, CoordinatedTile>([ [ D20Puzzle.coordsToKey({x:0,y:0}), { x:0, y:0, tile: northWestCornerTile } ] ]) })
 
         console.log("First found puzzle solution :")
-        D20Puzzle.printCoordinatedTiles(puzzleSolutionOutcome.coordinatedTiles, Array.from(puzzleSolutionOutcome.coordinatedTiles.values())[0].tile.squarredMatrix.size);
+        D20Puzzle.printCoordinatedTiles(coordinatedTiles, Array.from(coordinatedTiles.values())[0].tile.squarredMatrix.size);
 
-        const subtractedTiles = Array.from(puzzleSolutionOutcome.coordinatedTiles!.entries()).reduce((subtractedTiles, [key, coordinatedTile]) => {
+        const subtractedTiles = Array.from(coordinatedTiles!.entries()).reduce((subtractedTiles, [key, coordinatedTile]) => {
             subtractedTiles.set(key, {...coordinatedTile, tile: coordinatedTile.tile.subtractBorders()});
             return subtractedTiles;
         }, new Map<string, CoordinatedTile>());
