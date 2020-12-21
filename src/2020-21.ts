@@ -90,12 +90,18 @@ export class D21ListOfFoods {
             ingredientsWithoutAllergen.delete(ingredientToEvict)
         }
 
-        return ingredientsWithoutAllergen;
+        return { ingredientsWithoutAllergen, ingredientsConcernedByAllergens };
     }
 
     countIngredientOccurencesHavingNoAllergen() {
-        let ingredientsWithNoAllergens = this.determineIngredientsThatCantPossiblyContainAnyAllergens();
-        return Array.from(ingredientsWithNoAllergens).reduce((count, ingredient) => count + this.foodsByIngredient.get(ingredient)!.length, 0);
+        let { ingredientsWithoutAllergen } = this.determineIngredientsThatCantPossiblyContainAnyAllergens();
+        return Array.from(ingredientsWithoutAllergen).reduce((count, ingredient) => count + this.foodsByIngredient.get(ingredient)!.length, 0);
+    }
+
+    canonicalIngredientList() {
+        let { ingredientsConcernedByAllergens } = this.determineIngredientsThatCantPossiblyContainAnyAllergens();
+        ingredientsConcernedByAllergens.sort((ing1, ing2) => ing1.allergen.localeCompare(ing2.allergen));
+        return ingredientsConcernedByAllergens.map(ing => ing.ingredient).join(",");
     }
 
 
