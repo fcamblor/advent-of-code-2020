@@ -1,5 +1,9 @@
-import {countMessagesMatchingRules, D19ResolvedRule, D19Rule, D19UnresolvedRule} from "../src/2020-19";
-import {D19_INPUT, D19_Q1_SAMPLE} from "./2020-19.inputs";
+import {
+    D19ResolvedRule,
+    D19Rule,
+    D19UnresolvedRule, messagesMatchingRules, messagesMatchingUpdatedRules
+} from "../src/2020-19";
+import {D19_INPUT, D19_Q1_SAMPLE, D19_Q2_SAMPLE} from "./2020-19.inputs";
 
 
 test("Q1 samples parsing", () => {
@@ -16,9 +20,31 @@ test("INPUT parsing doesn't produce any error", () => {
 })
 
 test("Q1 sample", () => {
-    expect(countMessagesMatchingRules(D19_Q1_SAMPLE.rules, D19_Q1_SAMPLE.receivedMessages)).toEqual(2);
+    expect(messagesMatchingRules(D19_Q1_SAMPLE.rules, D19_Q1_SAMPLE.receivedMessages).length).toEqual(2);
 })
 
 test("Q1 INPUT", () => {
-    expect(countMessagesMatchingRules(D19_INPUT.rules, D19_INPUT.receivedMessages)).toEqual(156);
+    expect(messagesMatchingRules(D19_INPUT.rules, D19_INPUT.receivedMessages).length).toEqual(156);
+})
+
+test("Q2 sample", () => {
+    expect(messagesMatchingRules(D19_Q2_SAMPLE.rules, D19_Q2_SAMPLE.receivedMessages).length).toEqual(3);
+    expect(messagesMatchingUpdatedRules(D19_Q2_SAMPLE.rules, D19_Q2_SAMPLE.receivedMessages)).toEqual([
+        "bbabbbbaabaabba",
+        "babbbbaabbbbbabbbbbbaabaaabaaa",
+        "aaabbbbbbaaaabaababaabababbabaaabbababababaaa",
+        "bbbbbbbaaaabbbbaaabbabaaa",
+        "bbbababbbbaaaaaaaabbababaaababaabab",
+        "ababaaaaaabaaab",
+        "ababaaaaabbbaba",
+        "baabbaaaabbaaaababbaababb",
+        "abbbbabbbbaaaababbbbbbaaaababb",
+        "aaaaabbaabaaaaababaa",
+        "aaaabbaabbaaaaaaabbbabbbaaabbaabaaa",
+        "aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba",
+    ]);
+})
+
+test("Q2 INPUT", () => {
+    expect(messagesMatchingUpdatedRules(D19_INPUT.rules, D19_INPUT.receivedMessages).length).toEqual(363);
 })

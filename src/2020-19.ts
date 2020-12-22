@@ -147,9 +147,44 @@ export class D19ResolvedRule extends D19Rule {
     }
 }
 
-export function countMessagesMatchingRules(rawRules: string, rawMessages: string) {
+export class D19SpecialRule {
+    constructor(public readonly resolvedRules: Map<number, D19ResolvedRule>) {
+    }
+
+    matchesWith(candidate: string): boolean {
+        cartesian()
+
+        let regex42 = this.generateResolvedRuleRegex(42);
+        let regex31 = this.generateResolvedRuleRegex(31);
+        // given that input is maximum 96-97 chars long, and candidates for rules 42 and 31 are 8-chars long candidates,
+        // it means that we need to balance regex42 and regex31 between 1 and 12 occurence, without overtaking a total
+        // amount of 12 occurences with both regexes
+        const matches = cartesian([1,2,3,4,5,6,7,8,9,10,11,12],[1,2,3,4,5,6,7,8,9,10,11,12])
+            .filter(([s1,s2]) => s1+s2<=12)
+            .reduce((matches, [s1, s2]) => {
+                const rule8Regex = `(?:${regex42}){${s1}}`;
+                const rule11Regex = `(?:(?:${regex42}){${s2}}(?:${regex31}){${s2}})`;
+                let rule0Regex = `^(?:${rule8Regex}${rule11Regex})$`;
+                return matches || !!candidate.match(rule0Regex);
+            }, false);
+        return matches;
+    }
+
+    generateResolvedRuleRegex(ruleId: number) {
+        return Array.from(this.resolvedRules.get(ruleId)!.resolvedValues).map(rv => `${rv}`).join("|");
+    }
+}
+
+export function messagesMatchingRules(rawRules: string, rawMessages: string) {
     let rules = D19Rule.createFromRaw(rawRules);
     const { resolvedRules } = D19Rule.resolveRules(rules);
     const rule0 = resolvedRules.get(0)!;
-    return rawMessages.split("\n").reduce((count, line) => count + (rule0.matchesWith(line)?1:0), 0);
+    return rawMessages.split("\n").filter(line => rule0.matchesWith(line));
+}
+
+export function messagesMatchingUpdatedRules(rawRules: string, rawMessages: string) {
+    let rules = D19Rule.createFromRaw(rawRules);
+    const { resolvedRules } = D19Rule.resolveRules(rules);
+    const specialRule = new D19SpecialRule(resolvedRules);
+    return rawMessages.split("\n").filter(line => specialRule.matchesWith(line));
 }
