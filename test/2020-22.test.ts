@@ -21,18 +21,10 @@ test("Q2 sample", () => {
 })
 
 test("Q2 game is not looping forever", () => {
-    const loopingCandidateInput = `
-Player 1:
-43
-19
-
-Player 2:
-2
-29
-14
-    `.trim()
-    let gameOutcome = d22play(loopingCandidateInput, D22RecursiveCombat.play);
-    console.log(gameOutcome.outputs.join("\n"))
+    let gameOutcome = d22play(D22_INFINITE_LOOP_SAMPLE.rawString, D22RecursiveCombat.play);
+    // console.log(gameOutcome.outputs.join("\n"))
+    expect(gameOutcome.outputs).toEqual(D22_INFINITE_LOOP_SAMPLE.expectedOutput.split("\n"));
+    expect(gameOutcome.winner!.score()).toEqual(105);
 })
 
 test("Q2 INPUT", () => {

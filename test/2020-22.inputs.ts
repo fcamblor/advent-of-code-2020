@@ -463,6 +463,71 @@ Player 2's deck: 7, 5, 6, 2, 4, 1, 10, 8, 9, 3
     `.trim()
 };
 
+export const D22_INFINITE_LOOP_SAMPLE = {
+    rawString: `
+Player 1:
+43
+19
+
+Player 2:
+2
+29
+14
+    `.trim(),
+    expectedOutput: `
+=== Game 1 ===
+
+-- Round 1 (Game 1) --
+Player 1's deck: 43, 19
+Player 2's deck: 2, 29, 14
+Player 1 plays: 43
+Player 2 plays: 2
+Player 1 wins round 1 of game 1!
+
+-- Round 2 (Game 1) --
+Player 1's deck: 19, 43, 2
+Player 2's deck: 29, 14
+Player 1 plays: 19
+Player 2 plays: 29
+Player 2 wins round 2 of game 1!
+
+-- Round 3 (Game 1) --
+Player 1's deck: 43, 2
+Player 2's deck: 14, 29, 19
+Player 1 plays: 43
+Player 2 plays: 14
+Player 1 wins round 3 of game 1!
+
+-- Round 4 (Game 1) --
+Player 1's deck: 2, 43, 14
+Player 2's deck: 29, 19
+Player 1 plays: 2
+Player 2 plays: 29
+Player 2 wins round 4 of game 1!
+
+-- Round 5 (Game 1) --
+Player 1's deck: 43, 14
+Player 2's deck: 19, 29, 2
+Player 1 plays: 43
+Player 2 plays: 19
+Player 1 wins round 5 of game 1!
+
+-- Round 6 (Game 1) --
+Player 1's deck: 14, 43, 19
+Player 2's deck: 29, 2
+Player 1 plays: 14
+Player 2 plays: 29
+Player 2 wins round 6 of game 1!
+
+Infinite loop detected on Game 1 Round 7 : considering Player 1 as a winner...
+The winner of game 1 is player 1!
+
+
+== Post-game results ==
+Player 1's deck: 43, 19
+Player 2's deck: 2, 29, 14
+    `.trim()
+};
 
 export const D22_INPUT = `
 Player 1:

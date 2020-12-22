@@ -93,6 +93,7 @@ export class D22RecursiveCombat {
         while(currentGame !== undefined && overallRound<MAX_NUMBER_OF_OVERALL_ROUNDS) {
             let gameChecksum = `g:${currentGame.gameId};p1:${currentGame.player1.deck.join(",")};p2:${currentGame.player2.deck.join(",")}`
             while(currentGame !== undefined && currentGame.uniqueRoundPrevention.has(gameChecksum)) {
+                outputs.push(`Infinite loop detected on Game ${currentGame.gameId} Round ${currentGame.round} : considering ${currentGame.player1.name} as a winner...`)
                 const gameWinner = currentGame.player1;
                 currentGame = D22RecursiveCombat.declareGameWinner(gameWinner, currentGame, recursiveGameState, outputs);
                 if (currentGame !== undefined) {
