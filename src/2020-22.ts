@@ -29,42 +29,138 @@ export class ClonedD22Player extends D22Player {
     }
 }
 
-export class D22CombatGame {
+export class D22Logger {
+    private buffer: string[] = [];
+    constructor() {
+    }
 
-    static play(player1: D22Player, player2: D22Player) {
-        const outputs = [] as string[];
-        let currentGame = { player1: player1, player2: player2, gameId: 1, card1: -1, card2: -1, round: 1 }
-        while(currentGame.player1.deckNotEmpty() && currentGame.player2.deckNotEmpty()) {
-            outputs.push(`-- Round ${currentGame.round} --`);
-            outputs.push(`${currentGame.player1.name}'s deck: ${currentGame.player1.deck.join(", ")}`);
-            outputs.push(`${currentGame.player2.name}'s deck: ${currentGame.player2.deck.join(", ")}`);
+    public startRound(currentGame: D22Game) {
+        return this.append(`-- Round ${currentGame.currentRound()} --`)
+                   .append(`${currentGame.player1.name}'s deck: ${currentGame.player1.deck.join(", ")}`)
+                   .append(`${currentGame.player2.name}'s deck: ${currentGame.player2.deck.join(", ")}`);
+    }
 
-            currentGame.card1 = currentGame.player1.playNextCard();
-            currentGame.card2 = currentGame.player2.playNextCard();
+    public append(str: string) {
+        this.buffer.push(str);
+        return this;
+    }
 
-            outputs.push(`${currentGame.player1.name} plays: ${currentGame.card1}`);
-            outputs.push(`${currentGame.player2.name} plays: ${currentGame.card2}`);
+    public newLine() {
+        this.buffer.push('');
+        return this;
+    }
 
-            if(currentGame.card1 > currentGame.card2) {
-                currentGame.player1.addCardsToDeck([ currentGame.card1, currentGame.card2 ]);
-                outputs.push(`${currentGame.player1.name} wins the round!`);
-            } else {
-                currentGame.player2.addCardsToDeck([ currentGame.card2, currentGame.card1 ]);
-                outputs.push(`${currentGame.player2.name} wins the round!`);
-            }
+    public showPlayerCards(perPlayerCards: ({ playerName: string; card: number })[]) {
+        perPlayerCards.forEach(perPlayerCard => {
+            this.append(`${perPlayerCard.playerName} plays: ${perPlayerCard.card}`);
+        })
+    }
 
-            currentGame.round++;
-            outputs.push(``);
+    public postGameResults(currentGame: D22Game) {
+        return this.newLine()
+                   .append(`== Post-game results ==`)
+                   .append(`${currentGame.player1.name}'s deck: ${currentGame.player1.deck.join(", ")}`)
+                   .append(`${currentGame.player2.name}'s deck: ${currentGame.player2.deck.join(", ")}`);
+    }
+
+    public toString(){
+        return this.buffer.join("\n");
+    }
+
+    public outputLines() {
+        return [ ...this.buffer ];
+    }
+}
+
+export class D22Game {
+    private round: number;
+    protected readonly perPlayerNameCurrentCards: Map<string, number>;
+    protected readonly logger: D22Logger;
+    constructor(public readonly player1: D22Player, public readonly player2: D22Player) {
+        this.round = 1;
+        this.perPlayerNameCurrentCards = new Map<string, number>();
+        this.logger = new D22Logger();
+    }
+
+    public play() {
+        while(!this.gameIsOver()) {
+            this.logger.startRound(this);
+
+            this.pickPlayersTopCards();
+
+            const roundWinner = this.guessRoundWinner();
+
+            this.round++;
+            this.logger.newLine();
         }
 
-        outputs.push(``)
-        outputs.push(`== Post-game results ==`)
-        outputs.push(`${currentGame.player1.name}'s deck: ${currentGame.player1.deck.join(", ")}`)
-        outputs.push(`${currentGame.player2.name}'s deck: ${currentGame.player2.deck.join(", ")}`)
+        this.logger.postGameResults(this);
 
-        const winner = currentGame.player1.deckNotEmpty()?currentGame.player1:currentGame.player2;
-        return { winner, outputs };
+        const gameWinner = this.guessGameWinner();
+        return { gameWinner, logger: this.logger };
     }
+
+    public pickPlayersTopCards() {
+        const [ card1, card2 ] = [ this.player1.playNextCard(), this.player2.playNextCard() ];
+        this.perPlayerNameCurrentCards.set(this.player1.name, card1);
+        this.perPlayerNameCurrentCards.set(this.player2.name, card2);
+
+        this.logger.showPlayerCards([
+            { playerName: this.player1.name, card: card1 },
+            { playerName: this.player2.name, card: card2 }
+        ]);
+    }
+
+    public guessRoundWinner() {
+        const [ card1, card2 ] = [ this.cardForPlayer(this.player1.name), this.cardForPlayer(this.player2.name) ];
+        let winner;
+        if(card1 > card2) {
+            this.player1.addCardsToDeck([ card1, card2 ]);
+            winner = this.player1;
+        } else {
+            this.player2.addCardsToDeck([ card2, card1 ]);
+            winner = this.player2;
+        }
+        this.logger.append(`${winner.name} wins the round!`)
+
+        return winner;
+    }
+
+    public guessGameWinner() {
+        if(this.player1.deckIsEmpty()) {
+            return this.player2;
+        } else if(this.player2.deckIsEmpty()) {
+            return this.player1;
+        } else {
+            return undefined;
+        }
+    }
+
+    public cardForPlayer(playerName: string) {
+        return this.perPlayerNameCurrentCards.get(playerName)!;
+    }
+
+    public gameIsOver() {
+        return this.player1.deckIsEmpty() || this.player2.deckIsEmpty();
+    }
+
+    public currentRound() {
+        return this.round;
+    }
+
+    public static createFrom(str: string, gameFactory: (player1: D22Player, player2: D22Player) => D22Game): D22Game {
+        const [ player1, player2 ] = str.split("\n\n").map(str => str.trim()).map(playerStr => {
+            const [ name, ...cards ] = playerStr.split("\n");
+            return new D22Player(name.split(":")[0], cards.map(Number));
+        })
+
+        return gameFactory(player1, player2);
+    }
+
+}
+
+export class D22CombatGame extends D22Game {
+
 }
 
 type D22RecursiveCombatGame = {player1:D22Player, player2:D22Player, gameId: number, round: number, card1: number, card2: number, uniqueRoundPrevention: Set<string>};
