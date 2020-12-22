@@ -32,23 +32,38 @@ export class ClonedD22Player extends D22Player {
 export class D22CombatGame {
 
     static play(player1: D22Player, player2: D22Player) {
-        let currentGame = { player1: player1, player2: player2, gameId: 1 }
-        let round = 1;
+        const outputs = [] as string[];
+        let currentGame = { player1: player1, player2: player2, gameId: 1, card1: -1, card2: -1, round: 1 }
         while(currentGame.player1.deckNotEmpty() && currentGame.player2.deckNotEmpty()) {
-            const card1 = currentGame.player1.playNextCard();
-            const card2 = currentGame.player2.playNextCard();
+            outputs.push(`-- Round ${currentGame.round} --`);
+            outputs.push(`${currentGame.player1.name}'s deck: ${currentGame.player1.deck.join(", ")}`);
+            outputs.push(`${currentGame.player2.name}'s deck: ${currentGame.player2.deck.join(", ")}`);
 
-            if(card1 > card2) {
-                currentGame.player1.addCardsToDeck([ card1, card2 ]);
+            currentGame.card1 = currentGame.player1.playNextCard();
+            currentGame.card2 = currentGame.player2.playNextCard();
+
+            outputs.push(`${currentGame.player1.name} plays: ${currentGame.card1}`);
+            outputs.push(`${currentGame.player2.name} plays: ${currentGame.card2}`);
+
+            if(currentGame.card1 > currentGame.card2) {
+                currentGame.player1.addCardsToDeck([ currentGame.card1, currentGame.card2 ]);
+                outputs.push(`${currentGame.player1.name} wins the round!`);
             } else {
-                currentGame.player2.addCardsToDeck([ card2, card1 ]);
+                currentGame.player2.addCardsToDeck([ currentGame.card2, currentGame.card1 ]);
+                outputs.push(`${currentGame.player2.name} wins the round!`);
             }
 
-            round++;
+            currentGame.round++;
+            outputs.push(``);
         }
 
+        outputs.push(``)
+        outputs.push(`== Post-game results ==`)
+        outputs.push(`${currentGame.player1.name}'s deck: ${currentGame.player1.deck.join(", ")}`)
+        outputs.push(`${currentGame.player2.name}'s deck: ${currentGame.player2.deck.join(", ")}`)
+
         const winner = currentGame.player1.deckNotEmpty()?currentGame.player1:currentGame.player2;
-        return { winner, outputs: ['']};
+        return { winner, outputs };
     }
 }
 

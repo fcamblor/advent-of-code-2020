@@ -1,9 +1,12 @@
 import {D22CombatGame, d22play, D22RecursiveCombat} from "../src/2020-22";
-import {D22_INPUT, D22_Q1_SAMPLE, D22_SAMPLE_Q2_EXPECTED_OUTPUT} from "./2020-22.inputs";
+import {D22_INFINITE_LOOP_SAMPLE, D22_INPUT, D22_SAMPLE} from "./2020-22.inputs";
 
 
 test("Q1 sample", () => {
-    expect(d22play(D22_Q1_SAMPLE, D22CombatGame.play).winner!.score()).toEqual(306);
+    let gameOutcome = d22play(D22_SAMPLE.rawString, D22CombatGame.play);
+    // console.log(gameOutcome.outputs.join("\n"))
+    expect(gameOutcome.outputs).toEqual(D22_SAMPLE.expectedQ1Output.split("\n"));
+    expect(gameOutcome.winner!.score()).toEqual(306);
 })
 
 test("Q1 INPUT", () => {
