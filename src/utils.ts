@@ -396,4 +396,8 @@ export class AoCLogger {
     public outputLines() {
         return [ ...this.buffer ];
     }
+
+    public print(){
+        console.log(this.toString());
+    }
 }
