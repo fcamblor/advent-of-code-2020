@@ -1,3 +1,4 @@
+import {AoCLogger} from "./utils";
 
 
 type D20Card = number;
@@ -29,25 +30,11 @@ export class ClonedD22Player extends D22Player {
     }
 }
 
-export class D22Logger {
-    private buffer: string[] = [];
-    constructor() {
-    }
-
+export class D22Logger extends AoCLogger {
     public startRound(currentGame: D22Game) {
         return this.append(`-- Round ${currentGame.currentRound()} --`)
-                   .append(`${currentGame.player1.name}'s deck: ${currentGame.player1.deck.join(", ")}`)
-                   .append(`${currentGame.player2.name}'s deck: ${currentGame.player2.deck.join(", ")}`);
-    }
-
-    public append(str: string) {
-        this.buffer.push(str);
-        return this;
-    }
-
-    public newLine() {
-        this.buffer.push('');
-        return this;
+            .append(`${currentGame.player1.name}'s deck: ${currentGame.player1.deck.join(", ")}`)
+            .append(`${currentGame.player2.name}'s deck: ${currentGame.player2.deck.join(", ")}`);
     }
 
     public showPlayerCards(perPlayerCards: ({ playerName: string; card: number })[]) {
@@ -61,14 +48,6 @@ export class D22Logger {
                    .append(`== Post-game results ==`)
                    .append(`${currentGame.player1.name}'s deck: ${currentGame.player1.deck.join(", ")}`)
                    .append(`${currentGame.player2.name}'s deck: ${currentGame.player2.deck.join(", ")}`);
-    }
-
-    public toString(){
-        return this.buffer.join("\n");
-    }
-
-    public outputLines() {
-        return [ ...this.buffer ];
     }
 }
 

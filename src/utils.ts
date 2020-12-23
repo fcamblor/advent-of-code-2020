@@ -373,3 +373,27 @@ export class Squarred2DMatrix<T> {
         return continuePredicateOutcome.continue?undefined:continuePredicateOutcome.result;
     }
 }
+
+export class AoCLogger {
+    protected buffer: string[] = [];
+    constructor() {
+    }
+
+    public append(str: string) {
+        this.buffer.push(str);
+        return this;
+    }
+
+    public newLine() {
+        this.buffer.push('');
+        return this;
+    }
+
+    public toString(){
+        return this.buffer.join("\n");
+    }
+
+    public outputLines() {
+        return [ ...this.buffer ];
+    }
+}
