@@ -23,6 +23,29 @@ neswnwewnwnwseenwseesewsenwsweewe
 wseweeenwnesenwwwswnew
 `.trim()
 
+export const D24_Q2_PER_DAY_SAMPLE = [
+    { day: 1, expectedBlackTiles: 15 },
+    { day: 2, expectedBlackTiles: 12 },
+    { day: 3, expectedBlackTiles: 25 },
+    { day: 4, expectedBlackTiles: 14 },
+    { day: 5, expectedBlackTiles: 23 },
+    { day: 6, expectedBlackTiles: 28 },
+    { day: 7, expectedBlackTiles: 41 },
+    { day: 8, expectedBlackTiles: 37 },
+    { day: 9, expectedBlackTiles: 49 },
+    { day: 10, expectedBlackTiles: 37 },
+
+    { day: 20, expectedBlackTiles: 132 },
+    { day: 30, expectedBlackTiles: 259 },
+    { day: 40, expectedBlackTiles: 406 },
+    { day: 50, expectedBlackTiles: 566 },
+    { day: 60, expectedBlackTiles: 788 },
+    { day: 70, expectedBlackTiles: 1106 },
+    { day: 80, expectedBlackTiles: 1373 },
+    { day: 90, expectedBlackTiles: 1844 },
+    { day: 100, expectedBlackTiles: 2208 },
+];
+
 export const D24_INPUT = `
 sweswneswswswswwswswswseneswswnwswwne
 swwswswswnwswwnwswswswwswswseenwsesw

@@ -20,6 +20,53 @@ export class D24Grid {
         return this.blackTiles.size;
     }
 
+    performDailyChanges(numberOfDays: number) {
+        for(let i=0; i<numberOfDays; i++) {
+            this.performDailyChange();
+        }
+        return this;
+    }
+
+    performDailyChange() {
+        const newBlackTilesGrid = new Map(this.blackTiles);
+        const {blackTileKeysToRemove, uniqueWhiteTileKeysAroundBlackTiles} = Array.from(this.blackTiles.values()).reduce(({blackTileKeysToRemove, uniqueWhiteTileKeysAroundBlackTiles}, tile) => {
+            let adjacentTiles = this.tilesAround(tile);
+            const adjacentBlackTiles = adjacentTiles.filter(t => t.v==="black");
+            if(adjacentBlackTiles.length === 0 || adjacentBlackTiles.length > 2) {
+                blackTileKeysToRemove.push(D24Grid.extractTileCoordsKey(tile));
+            }
+            adjacentTiles.filter(t => t.v==="white").forEach(t => {
+                uniqueWhiteTileKeysAroundBlackTiles.add(D24Grid.extractTileCoordsKey(t));
+            })
+
+            return {blackTileKeysToRemove, uniqueWhiteTileKeysAroundBlackTiles};
+        }, {blackTileKeysToRemove: [], uniqueWhiteTileKeysAroundBlackTiles: new Set<string>()} as {blackTileKeysToRemove: string[], uniqueWhiteTileKeysAroundBlackTiles: Set<string>})
+
+        blackTileKeysToRemove.forEach(k => newBlackTilesGrid.delete(k));
+        uniqueWhiteTileKeysAroundBlackTiles.forEach(k => {
+            const [x,y,z] = k.split("_").map(Number);
+            let adjacentTiles = this.tilesAround({x,y,z});
+            if(adjacentTiles.filter(t => t.v==="black").length === 2) {
+                newBlackTilesGrid.set(k, {x,y,z,v:"black"});
+            }
+        })
+
+        this.blackTiles = newBlackTilesGrid;
+
+        return this;
+    }
+
+    tilesAround({x,y,z}:{x:number, y:number, z:number}): D24Tile[] {
+        return [
+            {x: x, y: y-1, z: z+1},
+            {x: x, y: y+1, z: z-1},
+            {x: x+1, y: y-1, z: z},
+            {x: x-1, y: y+1, z: z},
+            {x: x-1, y: y, z: z+1},
+            {x: x+1, y: y, z: z-1},
+        ].map(coord => ({...coord, v: this.blackTiles.has(D24Grid.extractTileCoordsKey(coord))?"black":"white"}));
+    }
+
     static extractTileCoordsKey({x,y,z}:{x:number, y:number, z:number}) {
         return `${x}_${y}_${z}`
     }
