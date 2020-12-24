@@ -376,16 +376,36 @@ export class Squarred2DMatrix<T> {
 
 export class AoCLogger {
     protected buffer: string[] = [];
+    private enabled = true;
     constructor() {
     }
 
     public append(str: string) {
-        this.buffer.push(str);
+        if(this.enabled) {
+            this.buffer.push(str);
+        }
+        return this;
+    }
+
+    public appendIfEnabled(message: () => string) {
+        if(this.enabled) {
+            this.buffer.push(message());
+        }
         return this;
     }
 
     public newLine() {
-        this.buffer.push('');
+        this.append('');
+        return this;
+    }
+
+    public disable() {
+        this.enabled = false;
+        return this;
+    }
+
+    public enable() {
+        this.enabled = true;
         return this;
     }
 
@@ -400,4 +420,13 @@ export class AoCLogger {
     public print(){
         console.log(this.toString());
     }
+
+    public printAndFlush() {
+        if(this.enabled) {
+            console.log(this.toString());
+            this.buffer = [];
+        }
+        return this;
+    }
+}
 }
