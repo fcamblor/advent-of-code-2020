@@ -429,4 +429,54 @@ export class AoCLogger {
         return this;
     }
 }
+
+export class AoCExponentialLogger extends AoCLogger {
+    private nextLogValue: number;
+    private lastLogTime: number;
+    constructor(firstLogValue: number, private nextValue: (loggedValue: number) => number) {
+        super();
+        this.nextLogValue = firstLogValue;
+        this.lastLogTime = Date.now();
+    }
+
+    printWithExponentialValue(currentValue: number, message: (timeElapsed: number) => string) {
+        if(currentValue === this.nextLogValue) {
+            console.log(message(Date.now() - this.lastLogTime));
+            this.nextLogValue = this.nextValue(currentValue);
+            this.lastLogTime = Date.now();
+        }
+    }
+
+}
+
+export class PerfLogger extends AoCLogger {
+    private perProbeDurations: Map<string, {overallDuration: number, durations: number[]}>
+    constructor() {
+        super();
+        this.perProbeDurations = new Map<string, {overallDuration: number; durations: number[]}>();
+    }
+
+    recordDurationOf<T>(probeName: string, statement: () => T): T {
+        const start = Date.now();
+        const result = statement();
+        const duration = Date.now() - start;
+        let probeDuration = mapCreateIfAbsent(this.perProbeDurations, probeName, { overallDuration: 0, durations: [] });
+        probeDuration.overallDuration += duration;
+        probeDuration.durations.push(duration);
+        return result;
+    }
+
+    showStats(withMinMax: boolean = false) {
+        console.log(Array.from(this.perProbeDurations.entries())
+            .map(([probeName, durationStats]) => ({ probeName, ...durationStats }))
+            .sort((r1, r2) => r2.overallDuration - r1.overallDuration)
+            .map(result => {
+                let str = `${result.probeName}: Overall=${result.overallDuration}ms (count=${result.durations.length}`;
+                if(withMinMax) {
+                    str += `, min=${Math.min(...result.durations)}, max=${Math.max(...result.durations)}`;
+                }
+                str += ")";
+                return str;
+            }).join("\n"))
+    }
 }
