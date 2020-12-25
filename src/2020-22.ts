@@ -30,24 +30,36 @@ export class ClonedD22Player extends D22Player {
     }
 }
 
-export class D22Logger extends AoCLogger {
+export class D22Logger {
+    constructor(private logger: AoCLogger = new AoCLogger()) {
+    }
     public startRound(currentGame: D22Game) {
-        return this.append(`-- Round ${currentGame.currentRound()} --`)
+        return this.logger.append(`-- Round ${currentGame.currentRound()} --`)
             .append(`${currentGame.player1.name}'s deck: ${currentGame.player1.deck.join(", ")}`)
             .append(`${currentGame.player2.name}'s deck: ${currentGame.player2.deck.join(", ")}`);
     }
 
     public showPlayerCards(perPlayerCards: ({ playerName: string; card: number })[]) {
         perPlayerCards.forEach(perPlayerCard => {
-            this.append(`${perPlayerCard.playerName} plays: ${perPlayerCard.card}`);
+            this.logger.append(`${perPlayerCard.playerName} plays: ${perPlayerCard.card}`);
         })
     }
 
     public postGameResults(currentGame: D22Game) {
-        return this.newLine()
+        return this.logger.newLine()
                    .append(`== Post-game results ==`)
                    .append(`${currentGame.player1.name}'s deck: ${currentGame.player1.deck.join(", ")}`)
                    .append(`${currentGame.player2.name}'s deck: ${currentGame.player2.deck.join(", ")}`);
+    }
+
+    public append(str: string){
+        this.logger.append(str);
+        return this;
+    }
+
+    public newLine(){
+        this.logger.newLine();
+        return this;
     }
 }
 
